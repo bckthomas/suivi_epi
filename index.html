@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suivi EPI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════════
+         GLOBAL HEADER
+    ═══════════════════════════════════════════════════ -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <h1>Suivi EPI</h1>
+        <p class="subtitle">Suivi des contrôles annuels de sécurité du matériel d'escalade.</p>
+      </div>
+      <div class="app-header-right">
+        <span id="saveStatus" class="save-status" hidden></span>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════
+         VIEW: LIST
+    ═══════════════════════════════════════════════════ -->
+    <div id="view-list">
+      <section class="controls">
+        <div class="file-picker">
+          <button id="btnLoadFSAPI" class="btn-load" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M3 4a1 1 0 011-1h4.586A1 1 0 019.293 3.293L10.707 4.707A1 1 0 0111.414 5H16a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"/>
+              <path fill-rule="evenodd" d="M10 8a1 1 0 011 1v2.586l.793-.793a1 1 0 111.414 1.414l-2.5 2.5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 111.414-1.414l.793.793V9a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Charger un fichier JSON
+          </button>
+          <label for="fileInput" id="labelFileInput" class="btn-load">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M3 4a1 1 0 011-1h4.586A1 1 0 019.293 3.293L10.707 4.707A1 1 0 0111.414 5H16a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V4z"/>
+              <path fill-rule="evenodd" d="M10 8a1 1 0 011 1v2.586l.793-.793a1 1 0 111.414 1.414l-2.5 2.5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 111.414-1.414l.793.793V9a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Charger un fichier JSON
+          </label>
+          <input type="file" id="fileInput" accept=".json" aria-label="Charger un fichier JSON" />
+          <span id="fileName" class="file-name">Aucun fichier chargé</span>
+        </div>
+
+        <div class="search-box">
+          <label for="searchInput" class="sr-only">Rechercher un produit</label>
+          <input
+            type="search"
+            id="searchInput"
+            class="search-input"
+            placeholder="Rechercher un produit…"
+            aria-label="Rechercher un produit"
+            disabled
+          />
+        </div>
+
+        <button id="btnNewProduct" class="btn-primary" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+          Nouveau produit
+        </button>
+      </section>
+
+      <!-- Fallback banner for browsers without FSAPI -->
+      <div id="fallbackBanner" class="info-banner" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        La sauvegarde directe n'est pas disponible (désactivée par votre navigateur ou ses paramètres de confidentialité). Le fichier JSON mis à jour sera téléchargé après chaque modification — remplacez votre fichier d'origine par le fichier téléchargé pour conserver vos données.
+      </div>
+
+      <section class="stats" id="stats" hidden>
+        <span id="statsText"></span>
+      </section>
+
+      <div id="errorBox" class="error-box" hidden></div>
+
+      <div class="table-wrapper">
+        <table id="productTable" class="product-table" hidden aria-live="polite">
+          <thead>
+            <tr>
+            <th data-col="manufacturer" class="sortable" scope="col">
+              Fabricant <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="productName" class="sortable" scope="col">
+              Nom du produit <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="productType" class="sortable" scope="col">
+              Type de produit <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="description" class="sortable" scope="col">
+              Description <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="buyingDate" class="sortable" scope="col">
+              Date d'achat <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="lifetime" class="sortable" scope="col">
+              Durée de vie <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="expiryDate" class="sortable" scope="col">
+              Date d'expiration <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th scope="col">Statut EPI</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+
+        <div id="emptyState" class="empty-state" hidden>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
+          </svg>
+          <p>Aucun produit ne correspond à votre recherche.</p>
+        </div>
+
+        <div id="placeholder" class="placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a4 4 0 014-4h2m4 4v5a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2h5l2 2h5a2 2 0 012 2v3"/>
+          </svg>
+          <p>Chargez un fichier JSON pour afficher votre inventaire.</p>
+          <p class="hint">Format attendu : un tableau d'objets avec les champs<br>
+            <code>productName</code>, <code>manufacturer</code>, <code>productType</code>, <code>description</code>,<br>
+            <code>buyingDate</code> (AAAA-MM-JJ), <code>lifetime</code><br>
+            <pre><code class="language-json">
+              [
+                {
+                  "productName": "Verso",
+                  "manufacturer": "Petzl",
+                  "productType": "Descendeur",
+                  "description": "Descendeur/assureur léger pour cordes simples et doubles.",
+                  "buyingDate": "2021-03-10",
+                  "lifetime": 10,
+                  "epiChecks": [
+                    {
+                      "date": "2022-04-15",
+                      "inspector": "Alice Martin",
+                      "result": "pass",
+                      "notes": "Pas d'usure visible, rainures intactes. Approuvé pour utilisation continue."
+                    }
+                  ]
+                }
+              ]
+            </code></pre>
+          </p>
+        </div>
+      </div>
+    </div><!-- /#view-list -->
+
+    <!-- ═══════════════════════════════════════════════════
+         VIEW: DETAIL (EPI checks for one product)
+    ═══════════════════════════════════════════════════ -->
+    <div id="view-detail" hidden>
+      <div class="detail-topbar">
+        <button id="btnBack" class="btn-back" aria-label="Retour à la liste des produits">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+          </svg>
+          Retour à la liste
+        </button>
+      </div>
+
+      <!-- Product info card -->
+      <div class="product-card">
+        <div class="product-card-main">
+          <div>
+            <h2 id="detailProductName" class="detail-product-name"></h2>
+            <p id="detailProductMeta" class="detail-product-meta"></p>
+            <p id="detailManufacturer" class="detail-manufacturer"></p>
+          </div>
+          <span id="detailEpiStatus" class="epi-year-badge"></span>
+        </div>
+        <p id="detailDescription" class="detail-product-desc"></p>
+        <div class="product-card-dates">
+          <span class="card-date-item">
+            <span class="card-date-label">Acheté le</span>
+            <span id="detailBuyingDate" class="card-date-value"></span>
+          </span>
+          <span class="card-date-item">
+            <span class="card-date-label">Durée de vie (années)</span>
+            <span id="detailLifetime" class="card-date-value"></span>
+          </span>
+          <span class="card-date-item">
+            <span class="card-date-label">Expire le</span>
+            <span id="detailExpiryDate" class="card-date-value"></span>
+          </span>
+        </div>
+      </div>
+
+      <!-- EPI checks section -->
+      <div class="checks-section">
+        <div class="checks-header">
+          <h3 class="checks-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            EPI Security Checks
+          </h3>
+          <button id="btnAddCheck" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Ajouter un contrôle EPI
+          </button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="checksTable" class="product-table checks-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Contrôleur</th>
+                <th scope="col">Résultat</th>
+                <th scope="col">Remarques</th>
+              </tr>
+            </thead>
+            <tbody id="checksBody"></tbody>
+          </table>
+
+          <div id="checksEmpty" class="empty-state" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <p>Aucun contrôle de sécurité enregistré.</p>
+            <p class="hint">Cliquez sur <strong>Ajouter un contrôle EPI</strong> pour en enregistrer un.</p>
+          </div>
+        </div>
+      </div>
+    </div><!-- /#view-detail -->
+
+  </div><!-- /.app -->
+
+  <!-- ═══════════════════════════════════════════════════
+       MODAL: Add EPI Check
+  ═══════════════════════════════════════════════════ -->
+  <dialog id="modalAddCheck" class="modal" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle" class="modal-title">Nouveau contrôle de sécurité EPI</h2>
+        <button id="btnCloseModal" class="btn-icon" aria-label="Fermer">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="formAddCheck" class="modal-form" novalidate>
+        <div class="form-row">
+          <label for="checkDate" class="form-label">Date du contrôle <span class="required" aria-hidden="true">*</span></label>
+          <input type="date" id="checkDate" name="checkDate" class="form-input" required />
+          <p class="field-error" id="checkDateError" hidden>Veuillez saisir une date valide.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="checkInspector" class="form-label">Contrôleur <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="checkInspector" name="checkInspector" class="form-input" placeholder="Nom complet" required autocomplete="name" />
+          <p class="field-error" id="checkInspectorError" hidden>Le nom du contrôleur est obligatoire.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="checkResult" class="form-label">Résultat <span class="required" aria-hidden="true">*</span></label>
+          <select id="checkResult" name="checkResult" class="form-input form-select">
+            <option value="pass">✓ Conforme — matériel approuvé pour utilisation</option>
+            <option value="fail">✗ Non conforme — matériel à retirer du service</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="checkNotes" class="form-label">Remarques <span class="optional">(facultatif)</span></label>
+          <textarea id="checkNotes" name="checkNotes" class="form-input form-textarea" rows="3" placeholder="Observations, remarques, actions recommandées…"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelCheck" class="btn-secondary">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ═══════════════════════════════════════════════════
+       MODAL: Add new product
+  ═══════════════════════════════════════════════════ -->
+  <dialog id="modalNewProduct" class="modal" aria-labelledby="modalNewProductTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalNewProductTitle" class="modal-title">Nouveau produit</h2>
+        <button id="btnCloseNewProduct" class="btn-icon" aria-label="Fermer">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="formNewProduct" class="modal-form" novalidate>
+        <div class="form-row">
+          <label for="newProductName" class="form-label">Nom du produit <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="newProductName" name="newProductName" class="form-input" placeholder="ex. Petzl Grigri+" required />
+          <p class="field-error" id="newProductNameError" hidden>Le nom du produit est obligatoire.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="newProductManufacturer" class="form-label">Fabricant <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="newProductManufacturer" name="newProductManufacturer" class="form-input" placeholder="ex. Petzl, Black Diamond…" required />
+          <p class="field-error" id="newProductManufacturerError" hidden>Le fabricant est obligatoire.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="newProductType" class="form-label">Type de produit <span class="required" aria-hidden="true">*</span></label>
+          <input type="text" id="newProductType" name="newProductType" class="form-input" placeholder="ex. Baudrier, Corde, Mousqueton…" required />
+          <p class="field-error" id="newProductTypeError" hidden>Le type de produit est obligatoire.</p>
+        </div>
+
+        <div class="form-row">
+          <label for="newProductDescription" class="form-label">Description <span class="optional">(facultatif)</span></label>
+          <textarea id="newProductDescription" name="newProductDescription" class="form-input form-textarea" rows="2" placeholder="Caractéristiques, référence…"></textarea>
+        </div>
+
+        <div class="form-row-group">
+          <div class="form-row">
+            <label for="newProductBuyingDate" class="form-label">Date d'achat <span class="required" aria-hidden="true">*</span></label>
+            <input type="date" id="newProductBuyingDate" name="newProductBuyingDate" class="form-input" required />
+            <p class="field-error" id="newProductBuyingDateError" hidden>Veuillez saisir une date d'achat valide.</p>
+          </div>
+
+          <div class="form-row">
+            <label for="newProductLifetime" class="form-label">Durée de vie <span class="required" aria-hidden="true">*</span><span class="optional">(années)</span></label>
+            <input type="number" id="newProductLifetime" name="newProductLifetime" class="form-input" min="0" max="99" step="1" placeholder="ex. 10" required />
+            <p class="field-error" id="newProductLifetimeError" hidden>Veuillez saisir une durée de vie valide (en années).</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelNewProduct" class="btn-secondary">Annuler</button>
+          <button type="submit" class="btn-primary">Ajouter le produit</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

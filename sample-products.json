@@ -1,0 +1,186 @@
+[
+  {
+    "productName": "Verso",
+    "manufacturer": "Petzl",
+    "productType": "Descendeur",
+    "description": "Descendeur/assureur léger pour cordes simples et doubles.",
+    "buyingDate": "2021-03-10",
+    "lifetime": 10,
+    "epiChecks": [
+      {
+        "date": "2022-04-15",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": "Pas d'usure visible, rainures intactes. Approuvé pour utilisation continue."
+      },
+      {
+        "date": "2023-05-02",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": "Légères rayures de surface sur l'aluminium, dans les limites acceptables."
+      },
+      {
+        "date": "2024-04-20",
+        "inspector": "Bruno Leclerc",
+        "result": "pass",
+        "notes": ""
+      }
+    ]
+  },
+  {
+    "productName": "Momentum",
+    "manufacturer": "Black Diamond",
+    "productType": "Baudrier",
+    "description": "Baudrier polyvalent avec boucle Speed Adjust pré-enfilée.",
+    "buyingDate": "2020-06-22",
+    "lifetime": 10,
+    "epiChecks": [
+      {
+        "date": "2021-06-30",
+        "inspector": "Bruno Leclerc",
+        "result": "pass",
+        "notes": "Sangle en bon état, coutures intactes."
+      },
+      {
+        "date": "2022-07-10",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": ""
+      },
+      {
+        "date": "2023-06-25",
+        "inspector": "Alice Martin",
+        "result": "fail",
+        "notes": "Abrasion importante sur l'anneau ventral. Matériel retiré du service immédiatement."
+      }
+    ]
+  },
+  {
+    "productName": "Grigri+",
+    "manufacturer": "Petzl",
+    "productType": "Assureur",
+    "description": "Assureur à blocage assisté avec poignée anti-panique.",
+    "buyingDate": "2022-09-14",
+    "lifetime": 10,
+    "epiChecks": [
+      {
+        "date": "2023-09-20",
+        "inspector": "Carlos Dubois",
+        "result": "pass",
+        "notes": "Mécanisme de came fluide, aucune corrosion. Marquages lisibles."
+      },
+      {
+        "date": "2024-10-05",
+        "inspector": "Carlos Dubois",
+        "result": "pass",
+        "notes": ""
+      }
+    ]
+  },
+  {
+    "productName": "Crag Rope 9.5mm 60m",
+    "manufacturer": "Mammut",
+    "productType": "Corde",
+    "description": "Corde simple sèche 9.5mm, 60m. Traitement Golden Dry.",
+    "buyingDate": "2022-01-18",
+    "lifetime": 5,
+    "epiChecks": [
+      {
+        "date": "2023-02-14",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": "Aucun dommage sur l'âme détecté. Gaine uniforme, pas de glaçage."
+      },
+      {
+        "date": "2024-02-10",
+        "inspector": "Bruno Leclerc",
+        "result": "pass",
+        "notes": "Légère usure de gaine au marquage central, dans les tolérances."
+      }
+    ]
+  },
+  {
+    "productName": "Zero Friend #3",
+    "manufacturer": "Wild Country",
+    "productType": "Coinceur mécanique",
+    "description": "Coinceur mécanique pour escalade en fissure. Plage 47–66mm.",
+    "buyingDate": "2019-08-05",
+    "lifetime": 10,
+    "epiChecks": [
+      {
+        "date": "2020-09-01",
+        "inspector": "Carlos Dubois",
+        "result": "pass",
+        "notes": ""
+      },
+      {
+        "date": "2021-09-15",
+        "inspector": "Carlos Dubois",
+        "result": "pass",
+        "notes": ""
+      },
+      {
+        "date": "2022-09-08",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": "Lobes se rétractent librement. Sangle en bon état."
+      },
+      {
+        "date": "2023-09-20",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": ""
+      }
+    ]
+  },
+  {
+    "productName": "Sirocco",
+    "manufacturer": "Petzl",
+    "productType": "Casque",
+    "description": "Casque ultra-léger en mousse pour escalade et alpinisme. 160g.",
+    "buyingDate": "2023-04-03",
+    "lifetime": 10,
+    "epiChecks": [
+      {
+        "date": "2024-04-12",
+        "inspector": "Bruno Leclerc",
+        "result": "pass",
+        "notes": "Pas de fissures ni de déformation. Système de rétention fonctionnel."
+      }
+    ]
+  },
+  {
+    "productName": "Phantom",
+    "manufacturer": "DMM",
+    "productType": "Mousqueton",
+    "description": "Mousqueton à vis léger. Résistance porte fermée 28kN.",
+    "buyingDate": "2021-11-30",
+    "lifetime": 10,
+    "epiChecks": []
+  },
+  {
+    "productName": "Ohm II",
+    "manufacturer": "Edelrid",
+    "productType": "Assureur",
+    "description": "Résisteur à blocage assisté pour grimper avec un partenaire plus léger.",
+    "buyingDate": "2023-07-19",
+    "lifetime": 10,
+    "epiChecks": []
+  },
+  {
+    "productName": "Attache",
+    "manufacturer": "Petzl",
+    "productType": "Mousqueton",
+    "description": "Mousqueton symétrique à verrouillage quart de tour. Usage universel.",
+    "buyingDate": "2018-05-12",
+    "lifetime": 0,
+    "epiChecks": [
+      {
+        "date": "2024-05-10",
+        "inspector": "Alice Martin",
+        "result": "pass",
+        "notes": "Aucune corrosion, verrouillage fonctionnel."
+      }
+    ]
+  }
+]
