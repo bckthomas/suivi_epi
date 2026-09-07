@@ -23,6 +23,8 @@
   let sortDir            = 'asc';
   let searchTerm         = '';
   let selectedIdx        = null; // index into allProducts for the detail view
+  let editingProductIdx  = null; // index being edited, or null when creating
+  let editingCheck       = null; // check object reference being edited, or null when creating
 
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   // Header
@@ -66,6 +68,9 @@
   const newProductTypeError    = document.getElementById('newProductTypeError');
   const newProductBuyingDateError = document.getElementById('newProductBuyingDateError');
   const newProductLifetimeError   = document.getElementById('newProductLifetimeError');
+  const modalNewProductTitle   = document.getElementById('modalNewProductTitle');
+  const btnSubmitNewProduct    = document.getElementById('btnSubmitNewProduct');
+  const btnEditProduct         = document.getElementById('btnEditProduct');
 
   // Detail view
   const viewDetail       = document.getElementById('view-detail');
@@ -86,6 +91,8 @@
 
   // Modal
   const modal            = document.getElementById('modalAddCheck');
+  const modalCheckTitle  = document.getElementById('modalCheckTitle');
+  const btnSubmitCheck   = document.getElementById('btnSubmitCheck');
   const formAddCheck     = document.getElementById('formAddCheck');
   const btnCloseModal    = document.getElementById('btnCloseModal');
   const btnCancelCheck   = document.getElementById('btnCancelCheck');
@@ -642,18 +649,50 @@
       const notesTd = appendTd(tr, c.notes || '—');
       notesTd.className = 'col-notes';
 
+      const actionsTd = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn-secondary btn-row-action';
+      editBtn.textContent = 'Modifier';
+      editBtn.addEventListener('click', function () { openEditCheckModal(c); });
+      actionsTd.appendChild(editBtn);
+      tr.appendChild(actionsTd);
+
       fragment.appendChild(tr);
     });
 
     checksBody.appendChild(fragment);
   }
 
-  // ─── New product modal ────────────────────────────────────────────────────────
+  // ─── New / edit product modal ─────────────────────────────────────────────────
   btnNewProduct.addEventListener('click', function () {
+    editingProductIdx = null;
     formNewProduct.reset();
     clearNewProductErrors();
+    modalNewProductTitle.textContent = 'Nouveau produit';
+    btnSubmitNewProduct.textContent  = 'Ajouter le produit';
     // Default buying date to today
     newProductBuyingDate.value = formatDate(new Date(Date.now()));
+    modalNewProduct.showModal();
+  });
+
+  btnEditProduct.addEventListener('click', function () {
+    if (selectedIdx === null) return;
+    editingProductIdx = selectedIdx;
+    const raw = rawData[selectedIdx];
+    clearNewProductErrors();
+    modalNewProductTitle.textContent = 'Modifier le produit';
+    btnSubmitNewProduct.textContent  = 'Enregistrer les modifications';
+    newProductName.value         = raw.productName || '';
+    newProductManufacturer.value = raw.manufacturer || '';
+    newProductType.value         = raw.productType || '';
+    newProductSerialNumber.value = raw.serialNumber || '';
+    newProductClubNumber.value   = raw.clubNumber || '';
+    newProductColor.value        = raw.color || '';
+    newProductLost.checked       = Boolean(raw.lost);
+    newProductDescription.value  = raw.description || '';
+    newProductBuyingDate.value   = raw.buyingDate || '';
+    newProductLifetime.value     = Number.isInteger(raw.lifetime) ? raw.lifetime : '';
     modalNewProduct.showModal();
   });
 
@@ -668,6 +707,7 @@
 
   function closeNewProductModal() {
     clearNewProductErrors();
+    editingProductIdx = null;
     modalNewProduct.close();
   }
 
@@ -675,7 +715,7 @@
     e.preventDefault();
     if (!validateNewProductForm()) return;
 
-    const newRaw = {
+    const values = {
       productName:  newProductName.value.trim(),
       manufacturer: newProductManufacturer.value.trim(),
       productType:  newProductType.value.trim(),
@@ -686,14 +726,23 @@
       description:  newProductDescription.value.trim(),
       buyingDate:   newProductBuyingDate.value,
       lifetime:     parseInt(newProductLifetime.value, 10),
-      epiChecks:    [],
     };
 
-    rawData.push(newRaw);
-    allProducts.push(enrichProduct(newRaw, rawData.length - 1));
+    if (editingProductIdx !== null) {
+      const idx = editingProductIdx;
+      Object.assign(rawData[idx], values);
+      allProducts[idx] = enrichProduct(rawData[idx], idx);
+      closeNewProductModal();
+      renderTable();
+      if (selectedIdx === idx) renderDetailView(idx);
+    } else {
+      const newRaw = Object.assign({ epiChecks: [] }, values);
+      rawData.push(newRaw);
+      allProducts.push(enrichProduct(newRaw, rawData.length - 1));
+      closeNewProductModal();
+      renderTable();
+    }
 
-    closeNewProductModal();
-    renderTable();
     saveData();
   });
 
@@ -757,9 +806,12 @@
     });
   }
 
-  // ─── Add EPI check modal ──────────────────────────────────────────────────────
+  // ─── Add / edit EPI check modal ───────────────────────────────────────────────
   btnAddCheck.addEventListener('click', function () {
-    // Set default date to today
+    editingCheck = null;
+    modalCheckTitle.textContent = 'Nouveau contrôle de sécurité EPI';
+    btnSubmitCheck.textContent  = 'Enregistrer';
+    // Default date to today
     const today = formatDate(new Date(Date.now()));
     checkDate.value      = today;
     checkInspector.value = '';
@@ -768,6 +820,18 @@
     clearFormErrors();
     modal.showModal();
   });
+
+  function openEditCheckModal(check) {
+    editingCheck = check;
+    modalCheckTitle.textContent = 'Modifier le contrôle EPI';
+    btnSubmitCheck.textContent  = 'Enregistrer les modifications';
+    checkDate.value      = check.date || '';
+    checkInspector.value = check.inspector || '';
+    checkResult.value    = check.result || 'pass';
+    checkNotes.value     = check.notes || '';
+    clearFormErrors();
+    modal.showModal();
+  }
 
   btnCloseModal.addEventListener('click',  closeModal);
   btnCancelCheck.addEventListener('click', closeModal);
@@ -782,6 +846,7 @@
 
   function closeModal() {
     clearFormErrors();
+    editingCheck = null;
     modal.close();
   }
 
@@ -790,19 +855,23 @@
     e.preventDefault();
     if (!validateCheckForm()) return;
 
-    const newCheck = {
+    const values = {
       date:      checkDate.value,
       inspector: checkInspector.value.trim(),
       result:    checkResult.value,
       notes:     checkNotes.value.trim(),
     };
 
-    // Update rawData (what gets written to file)
-    if (!Array.isArray(rawData[selectedIdx].epiChecks)) {
-      rawData[selectedIdx].epiChecks = [];
+    if (editingCheck !== null) {
+      Object.assign(editingCheck, values);
+    } else {
+      if (!Array.isArray(rawData[selectedIdx].epiChecks)) {
+        rawData[selectedIdx].epiChecks = [];
+      }
+      rawData[selectedIdx].epiChecks.push(values);
     }
-    rawData[selectedIdx].epiChecks.push(newCheck);
-    if (newCheck.result === 'lost') {
+
+    if (values.result === 'lost') {
       rawData[selectedIdx].lost = true;
       allProducts[selectedIdx].lost = true;
     }

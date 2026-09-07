@@ -353,6 +353,11 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
   font-size: .82rem;
 }
 
+.btn-row-action {
+  padding: .3rem .7rem;
+  font-size: .78rem;
+}
+
 /* ── Expiry badge ── */
 .expiry-badge {
   display: inline-block;
@@ -497,6 +502,19 @@ code.language-json {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: .5rem;
+}
+
+.product-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .6rem;
+  flex-shrink: 0;
+}
+
+.product-card-actions button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .detail-product-name {
@@ -794,7 +812,7 @@ code.language-json {
   .file-name  { max-width: 100%; }
 
   .product-card-main { flex-direction: column; }
-  .epi-year-badge { align-self: flex-start; }
+  .product-card-actions { flex-direction: row; align-self: stretch; justify-content: space-between; }
 
   .checks-header { flex-direction: column; align-items: flex-start; }
 
