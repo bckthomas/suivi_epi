@@ -73,7 +73,6 @@ body {
    App shell
    ============================================================ */
 .app {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
@@ -321,6 +320,10 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 .product-table tbody tr:last-child { border-bottom: none; }
 .product-table tbody tr:nth-child(even) { background: var(--color-row-even); }
 .product-table tbody tr:hover { background: var(--color-row-hover); }
+.product-table tbody tr.row-epi-required { background: #fff1f2; }
+.product-table tbody tr.row-epi-required:hover { background: #ffe4e6; }
+.product-table tbody tr.row-epi-lost { background: #fee2e2; }
+.product-table tbody tr.row-epi-lost:hover { background: #fecaca; }
 
 .product-table td {
   padding: .7rem 1rem;
@@ -347,6 +350,11 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
   white-space: normal;
   color: var(--color-text-muted);
   font-size: .82rem;
+}
+
+.btn-row-action {
+  padding: .3rem .7rem;
+  font-size: .78rem;
 }
 
 /* ── Expiry badge ── */
@@ -378,6 +386,7 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 
 .epi-status-done    { background: var(--color-ok);   color: var(--color-ok-t); }
 .epi-status-missing { background: var(--color-fail);  color: var(--color-fail-t); }
+.epi-status-lost    { background: var(--color-fail);  color: var(--color-fail-t); }
 .epi-status-none    { background: #f1f5f9; color: var(--color-text-muted); }
 
 /* ── Check result badge ── */
@@ -393,6 +402,7 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 
 .check-pass { background: var(--color-pass); color: var(--color-pass-t); }
 .check-fail { background: var(--color-fail); color: var(--color-fail-t); }
+.check-lost { background: var(--color-fail); color: var(--color-fail-t); }
 
 /* ============================================================
    Placeholder & empty state
@@ -491,6 +501,19 @@ code.language-json {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: .5rem;
+}
+
+.product-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .6rem;
+  flex-shrink: 0;
+}
+
+button svg {
+  width: 16px;
+  height: 16px;
 }
 
 .detail-product-name {
@@ -637,6 +660,40 @@ code.language-json {
   border-color: var(--color-primary);
 }
 
+.btn-secondary:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn-danger:not(:disabled) {
+  color: var(--color-fail-t);
+  border-color: var(--color-fail-t);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--color-fail);
+}
+
+/* ============================================================
+   Admin view (product types)
+   ============================================================ */
+.admin-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.admin-add-form {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+  max-width: 480px;
+}
+
+.admin-add-form .form-input {
+  flex: 1;
+}
+
 .btn-icon {
   display: inline-flex;
   align-items: center;
@@ -699,6 +756,20 @@ code.language-json {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .875rem;
+  color: var(--color-text);
+}
+
+.form-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
 }
 
 @media (max-width: 480px) {
@@ -774,7 +845,7 @@ code.language-json {
   .file-name  { max-width: 100%; }
 
   .product-card-main { flex-direction: column; }
-  .epi-year-badge { align-self: flex-start; }
+  .product-card-actions { flex-direction: row; align-self: stretch; justify-content: space-between; }
 
   .checks-header { flex-direction: column; align-items: flex-start; }
 
@@ -782,3 +853,6 @@ code.language-json {
   .modal-footer button { width: 100%; justify-content: center; }
 }
 
+.admin-section {
+  margin-bottom: 2rem;
+}

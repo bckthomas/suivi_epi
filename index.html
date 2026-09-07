@@ -14,10 +14,16 @@
     ═══════════════════════════════════════════════════ -->
     <header class="app-header">
       <div class="app-header-left">
-        <h1>Suivi EPI</h1>
+        <h1>Suivi EPI AL-Escalade</h1>
         <p class="subtitle">Suivi des contrôles annuels de sécurité du matériel d'escalade.</p>
       </div>
       <div class="app-header-right">
+        <button id="btnManageTypes" class="btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+          Gestion des listes
+        </button>
         <span id="saveStatus" class="save-status" hidden></span>
       </div>
     </header>
@@ -93,6 +99,9 @@
             </th>
             <th data-col="clubNumber" class="sortable" scope="col">
               Numéro club <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="color" class="sortable" scope="col">
+              Couleur <span class="sort-icon" aria-hidden="true"></span>
             </th>
             <th data-col="productType" class="sortable" scope="col">
               Type de produit <span class="sort-icon" aria-hidden="true"></span>
@@ -177,7 +186,15 @@
             <p id="detailManufacturer" class="detail-manufacturer"></p>
             <p id="detailProductIdentifiers" class="detail-product-identifiers"></p>
           </div>
-          <span id="detailEpiStatus" class="epi-year-badge"></span>
+          <div class="product-card-actions">
+            <span id="detailEpiStatus" class="epi-year-badge"></span>
+            <button id="btnEditProduct" class="btn-secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+              </svg>
+              Modifier le produit
+            </button>
+          </div>
         </div>
         <p id="detailDescription" class="detail-product-desc"></p>
         <div class="product-card-dates">
@@ -221,6 +238,7 @@
                 <th scope="col">Contrôleur</th>
                 <th scope="col">Résultat</th>
                 <th scope="col">Remarques</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody id="checksBody"></tbody>
@@ -237,15 +255,112 @@
       </div>
     </div><!-- /#view-detail -->
 
+    <!-- ═══════════════════════════════════════════════════
+         VIEW: ADMIN (manage reference lists)
+    ═══════════════════════════════════════════════════ -->
+    <div id="view-admin" hidden>
+      <div class="detail-topbar">
+        <button id="btnBackFromAdmin" class="btn-back" aria-label="Retour à la liste des produits">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+          </svg>
+          Retour à la liste
+        </button>
+      </div>
+
+      <h2 class="admin-title">Gestion des listes de référence</h2>
+
+      <section class="admin-section" data-admin-route="product-types">
+        <h3 class="admin-section-title">Types de produit</h3>
+        <div class="error-box admin-error-box" hidden></div>
+        <form class="admin-add-form" novalidate>
+          <label class="sr-only">Nouveau type de produit</label>
+          <input type="text" class="form-input admin-new-name" placeholder="Nom du nouveau type…" required />
+          <button type="submit" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Ajouter
+          </button>
+        </form>
+        <div class="table-wrapper">
+          <table class="product-table admin-types-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Produits</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="admin-types-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-section" data-admin-route="manufacturers">
+        <h3 class="admin-section-title">Fabricants</h3>
+        <div class="error-box admin-error-box" hidden></div>
+        <form class="admin-add-form" novalidate>
+          <label class="sr-only">Nouveau fabricant</label>
+          <input type="text" class="form-input admin-new-name" placeholder="Nom du nouveau fabricant…" required />
+          <button type="submit" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Ajouter
+          </button>
+        </form>
+        <div class="table-wrapper">
+          <table class="product-table admin-types-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Produits</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="admin-types-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-section" data-admin-route="colors">
+        <h3 class="admin-section-title">Couleurs</h3>
+        <div class="error-box admin-error-box" hidden></div>
+        <form class="admin-add-form" novalidate>
+          <label class="sr-only">Nouvelle couleur</label>
+          <input type="text" class="form-input admin-new-name" placeholder="Nom de la nouvelle couleur…" required />
+          <button type="submit" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Ajouter
+          </button>
+        </form>
+        <div class="table-wrapper">
+          <table class="product-table admin-types-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Produits</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="admin-types-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div><!-- /#view-admin -->
+
   </div><!-- /.app -->
 
   <!-- ═══════════════════════════════════════════════════
        MODAL: Add EPI Check
   ═══════════════════════════════════════════════════ -->
-  <dialog id="modalAddCheck" class="modal" aria-labelledby="modalTitle">
+  <dialog id="modalAddCheck" class="modal" aria-labelledby="modalCheckTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modalTitle" class="modal-title">Nouveau contrôle de sécurité EPI</h2>
+        <h2 id="modalCheckTitle" class="modal-title">Nouveau contrôle de sécurité EPI</h2>
         <button id="btnCloseModal" class="btn-icon" aria-label="Fermer">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
@@ -271,6 +386,7 @@
           <select id="checkResult" name="checkResult" class="form-input form-select">
             <option value="pass">✓ Conforme — matériel approuvé pour utilisation</option>
             <option value="fail">✗ Non conforme — matériel à retirer du service</option>
+            <option value="lost">⚠ Perdu — matériel introuvable</option>
           </select>
         </div>
 
@@ -281,7 +397,7 @@
 
         <div class="modal-footer">
           <button type="button" id="btnCancelCheck" class="btn-secondary">Annuler</button>
-          <button type="submit" class="btn-primary">Enregistrer</button>
+          <button type="submit" id="btnSubmitCheck" class="btn-primary">Enregistrer</button>
         </div>
       </form>
     </div>
@@ -310,13 +426,17 @@
 
         <div class="form-row">
           <label for="newProductManufacturer" class="form-label">Fabricant <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="newProductManufacturer" name="newProductManufacturer" class="form-input" placeholder="ex. Petzl, Black Diamond…" required />
+          <select id="newProductManufacturer" name="newProductManufacturer" class="form-input" required>
+            <option value="" disabled selected>Sélectionner un fabricant…</option>
+          </select>
           <p class="field-error" id="newProductManufacturerError" hidden>Le fabricant est obligatoire.</p>
         </div>
 
         <div class="form-row">
           <label for="newProductType" class="form-label">Type de produit <span class="required" aria-hidden="true">*</span></label>
-          <input type="text" id="newProductType" name="newProductType" class="form-input" placeholder="ex. Baudrier, Corde, Mousqueton…" required />
+          <select id="newProductType" name="newProductType" class="form-input" required>
+            <option value="" disabled selected>Sélectionner un type…</option>
+          </select>
           <p class="field-error" id="newProductTypeError" hidden>Le type de produit est obligatoire.</p>
         </div>
 
@@ -351,9 +471,46 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <label for="newProductColor" class="form-label">Couleur <span class="optional">(facultatif)</span></label>
+          <select id="newProductColor" name="newProductColor" class="form-input">
+            <option value="">Aucune</option>
+          </select>
+        </div>
+
+        <label class="form-checkbox" for="newProductLost">
+          <input type="checkbox" id="newProductLost" name="newProductLost" />
+          Produit perdu
+        </label>
+
         <div class="modal-footer">
           <button type="button" id="btnCancelNewProduct" class="btn-secondary">Annuler</button>
-          <button type="submit" class="btn-primary">Ajouter le produit</button>
+          <button type="submit" id="btnSubmitNewProduct" class="btn-primary">Ajouter le produit</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="modalReplacement" class="modal" aria-labelledby="modalReplacementTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalReplacementTitle" class="modal-title">Choisir un remplacement</h2>
+        <button type="button" id="btnCloseReplacement" class="btn-icon" aria-label="Fermer">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 011.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="formReplacement" class="modal-form">
+        <p id="replacementHelp" class="hint">Les produits utilisant cet élément seront affectés au remplacement choisi.</p>
+        <div class="form-row">
+          <label for="replacementSelect" class="form-label">Remplacement</label>
+          <select id="replacementSelect" class="form-input form-select" required></select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelReplacement" class="btn-secondary">Annuler</button>
+          <button type="submit" class="btn-primary">Supprimer et remplacer</button>
         </div>
       </form>
     </div>

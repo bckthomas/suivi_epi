@@ -23,6 +23,13 @@
   let sortDir            = 'asc';
   let searchTerm         = '';
   let selectedIdx        = null; // index into allProducts for the detail view
+  let editingProductIdx  = null; // index being edited, or null when creating
+  let editingCheck       = null; // check object reference being edited, or null when creating
+  let referenceLists     = {
+    'product-types': [],
+    manufacturers: [],
+    colors: [],
+  };
 
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   // Header
@@ -56,6 +63,8 @@
   const newProductType         = document.getElementById('newProductType');
   const newProductSerialNumber = document.getElementById('newProductSerialNumber');
   const newProductClubNumber   = document.getElementById('newProductClubNumber');
+  const newProductColor        = document.getElementById('newProductColor');
+  const newProductLost         = document.getElementById('newProductLost');
   const newProductDescription  = document.getElementById('newProductDescription');
   const newProductBuyingDate   = document.getElementById('newProductBuyingDate');
   const newProductLifetime     = document.getElementById('newProductLifetime');
@@ -64,6 +73,11 @@
   const newProductTypeError    = document.getElementById('newProductTypeError');
   const newProductBuyingDateError = document.getElementById('newProductBuyingDateError');
   const newProductLifetimeError   = document.getElementById('newProductLifetimeError');
+  const modalNewProductTitle   = document.getElementById('modalNewProductTitle');
+  const btnSubmitNewProduct    = document.getElementById('btnSubmitNewProduct');
+  const btnEditProduct         = document.getElementById('btnEditProduct');
+
+  const adminSections = document.querySelectorAll('.admin-section[data-admin-route]');
 
   // Detail view
   const viewDetail       = document.getElementById('view-detail');
@@ -82,8 +96,24 @@
   const checksEmpty      = document.getElementById('checksEmpty');
   const btnAddCheck      = document.getElementById('btnAddCheck');
 
+  // Admin view
+  const btnManageTypes   = document.getElementById('btnManageTypes');
+  const viewAdmin        = document.getElementById('view-admin');
+  const btnBackFromAdmin = document.getElementById('btnBackFromAdmin');
+  const adminErrorBox    = document.querySelector('.admin-error-box');
+
+  // Replacement modal
+  const modalReplacement       = document.getElementById('modalReplacement');
+  const formReplacement        = document.getElementById('formReplacement');
+  const modalReplacementTitle  = document.getElementById('modalReplacementTitle');
+  const replacementSelect      = document.getElementById('replacementSelect');
+  const btnCloseReplacement    = document.getElementById('btnCloseReplacement');
+  const btnCancelReplacement   = document.getElementById('btnCancelReplacement');
+
   // Modal
   const modal            = document.getElementById('modalAddCheck');
+  const modalCheckTitle  = document.getElementById('modalCheckTitle');
+  const btnSubmitCheck   = document.getElementById('btnSubmitCheck');
   const formAddCheck     = document.getElementById('formAddCheck');
   const btnCloseModal    = document.getElementById('btnCloseModal');
   const btnCancelCheck   = document.getElementById('btnCancelCheck');
@@ -153,7 +183,7 @@
   });
 
   // ─── Parse & load JSON ────────────────────────────────────────────────────────
-  function loadJSON(text) {
+  function loadJSON(text, preserveAdminView) {
     try {
       const parsed = JSON.parse(text);
       if (!Array.isArray(parsed)) {
@@ -170,9 +200,10 @@
       sortDir = 'asc';
       btnNewProduct.disabled = false;
       resetSortHeaders();
-      showListView();
+      if (!preserveAdminView) showListView();
       renderTable();
       setSaveStatus('saved');
+      loadReferenceLists();
     } catch (err) {
       showError('Impossible d\'analyser le fichier : ' + err.message);
       allProducts = [];
@@ -181,17 +212,253 @@
     }
   }
 
-  async function loadProductsFromAPI() {
+  async function loadProductsFromAPI(preserveAdminView) {
     try {
       const response = await fetch('/api/products');
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const products = await response.json();
-      loadJSON(JSON.stringify(products));
+      loadJSON(JSON.stringify(products), preserveAdminView);
     } catch (err) {
       showError('Impossible de charger les produits depuis la base de données : ' + err.message);
       hideTable();
     }
   }
+
+  // ─── Reference lists (types, manufacturers, colors) ─────────────────────────
+  const referenceProductFields = {
+    'product-types': { element: newProductType, placeholder: 'Sélectionner un type…', empty: 'Aucun type' },
+    manufacturers: { element: newProductManufacturer, placeholder: 'Sélectionner un fabricant…', empty: 'Aucun fabricant' },
+    colors: { element: newProductColor, placeholder: 'Aucune', empty: 'Aucune' },
+  };
+
+  function deriveReferenceList(field) {
+    const counts = new Map();
+    allProducts.forEach(function (product) {
+      const name = product[field];
+      if (name) counts.set(name, (counts.get(name) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(function ([name, count]) { return { id: name, name, count }; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
+
+  async function loadReferenceLists() {
+    const routes = Object.keys(referenceLists);
+    if (API_MODE) {
+      await Promise.all(routes.map(async function (route) {
+        try {
+          const response = await fetch('/api/' + route);
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          referenceLists[route] = await response.json();
+        } catch (err) {
+          referenceLists[route] = [];
+          showAdminError('Impossible de charger les référentiels : ' + err.message);
+        }
+      }));
+    } else {
+      referenceLists['product-types'] = deriveReferenceList('productType');
+      referenceLists.manufacturers = deriveReferenceList('manufacturer');
+      referenceLists.colors = deriveReferenceList('color');
+    }
+    populateReferenceSelects();
+    return referenceLists;
+  }
+
+  function populateReferenceSelects() {
+    Object.keys(referenceProductFields).forEach(function (route) {
+      const config = referenceProductFields[route];
+      const select = config.element;
+      const current = select.value;
+      select.textContent = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = route !== 'colors';
+      placeholder.textContent = config.placeholder;
+      select.appendChild(placeholder);
+      referenceLists[route].forEach(function (item) {
+        const option = document.createElement('option');
+        option.value = item.name;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      if (current && referenceLists[route].some(function (item) { return item.name === current; })) {
+        select.value = current;
+      } else {
+        placeholder.selected = true;
+      }
+    });
+  }
+
+  function showAdminError(msg) {
+    adminErrorBox.textContent = msg;
+    adminErrorBox.hidden = false;
+  }
+
+  function hideAdminError() {
+    adminErrorBox.hidden = true;
+  }
+
+  function chooseReplacement(route, item, candidates) {
+    modalReplacementTitle.textContent = 'Remplacer « ' + item.name + ' »';
+    replacementSelect.textContent = '';
+    if (route === 'colors') {
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = 'Aucune couleur';
+      replacementSelect.appendChild(emptyOption);
+    }
+    candidates.forEach(function (candidate) {
+      const option = document.createElement('option');
+      option.value = String(candidate.id);
+      option.textContent = candidate.name;
+      replacementSelect.appendChild(option);
+    });
+
+    return new Promise(function (resolve) {
+      function finish(value) {
+        modalReplacement.close();
+        resolve(value);
+      }
+      formReplacement.onsubmit = function (event) {
+        event.preventDefault();
+        finish({ replacementId: route === 'colors' && replacementSelect.value === ''
+          ? null
+          : Number(replacementSelect.value) });
+      };
+      btnCloseReplacement.onclick = function () { finish(null); };
+      btnCancelReplacement.onclick = function () { finish(null); };
+      modalReplacement.oncancel = function (event) {
+        event.preventDefault();
+        finish(null);
+      };
+      modalReplacement.showModal();
+    });
+  }
+
+  function renderReferenceTables() {
+    adminSections.forEach(function (section) {
+      const route = section.dataset.adminRoute;
+      const body = section.querySelector('.admin-types-body');
+      const error = section.querySelector('.admin-error-box');
+      body.textContent = '';
+      const fragment = document.createDocumentFragment();
+
+      referenceLists[route].forEach(function (item) {
+        const tr = document.createElement('tr');
+        appendTd(tr, item.name);
+        appendTd(tr, String(item.count));
+
+        const actionsTd = document.createElement('td');
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn-secondary btn-row-action';
+        editBtn.textContent = 'Renommer';
+        editBtn.disabled = !API_MODE;
+        editBtn.addEventListener('click', function () { renameReferenceItem(route, item); });
+        actionsTd.appendChild(editBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn-secondary btn-row-action btn-danger';
+        deleteBtn.textContent = 'Supprimer';
+        deleteBtn.disabled = !API_MODE;
+        deleteBtn.title = item.count > 0 ? 'Choisir un remplacement pour ' + item.count + ' produit(s)' : '';
+        deleteBtn.addEventListener('click', function () { deleteReferenceItem(route, item); });
+        actionsTd.appendChild(deleteBtn);
+
+        tr.appendChild(actionsTd);
+        fragment.appendChild(tr);
+      });
+
+      body.appendChild(fragment);
+      error.hidden = true;
+    });
+  }
+
+  async function renameReferenceItem(route, item) {
+    const name = window.prompt('Nouveau nom pour "' + item.name + '" :', item.name);
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === item.name) return;
+    try {
+      const response = await fetch('/api/' + route + '/' + item.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || ('HTTP ' + response.status));
+      referenceLists[route] = body;
+      renderReferenceTables();
+      populateReferenceSelects();
+      await loadProductsFromAPI(true);
+    } catch (err) {
+      showAdminError('Impossible de renommer cet élément : ' + err.message);
+    }
+  }
+
+  async function deleteReferenceItem(route, item) {
+    const candidates = referenceLists[route].filter(function (candidate) { return candidate.id !== item.id; });
+    let replacementId;
+
+    if (item.count > 0) {
+      if (candidates.length === 0 && route !== 'colors') {
+        showAdminError('Ajoutez un autre élément avant de supprimer celui-ci.');
+        return;
+      }
+      const replacement = await chooseReplacement(route, item, candidates);
+      if (replacement === null) return;
+      replacementId = replacement.replacementId;
+    } else if (!window.confirm('Supprimer "' + item.name + '" ?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/' + route + '/' + item.id, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ replacementId }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || ('HTTP ' + response.status));
+      referenceLists[route] = body;
+      renderReferenceTables();
+      populateReferenceSelects();
+      await loadProductsFromAPI(true);
+    } catch (err) {
+      showAdminError('Impossible de supprimer cet élément : ' + err.message);
+    }
+  }
+
+  adminSections.forEach(function (section) {
+    section.querySelector('.admin-add-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const route = section.dataset.adminRoute;
+      const input = section.querySelector('.admin-new-name');
+      const name = input.value.trim();
+      if (!name) return;
+      if (!API_MODE) {
+        showAdminError('La gestion des référentiels nécessite le mode base de données (Docker).');
+        return;
+      }
+      try {
+        const response = await fetch('/api/' + route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || ('HTTP ' + response.status));
+        referenceLists[route] = body;
+        input.value = '';
+        renderReferenceTables();
+        populateReferenceSelects();
+      } catch (err) {
+        showAdminError('Impossible d\'ajouter cet élément : ' + err.message);
+      }
+    });
+  });
 
   // ─── Saving ───────────────────────────────────────────────────────────────────
   /**
@@ -280,6 +547,7 @@
   function showListView() {
     viewList.hidden   = false;
     viewDetail.hidden = true;
+    viewAdmin.hidden  = true;
     selectedIdx       = null;
   }
 
@@ -287,10 +555,20 @@
     selectedIdx       = idx;
     viewList.hidden   = true;
     viewDetail.hidden = false;
+    viewAdmin.hidden  = true;
     renderDetailView(idx);
   }
 
+  function showAdminView() {
+    viewList.hidden   = true;
+    viewDetail.hidden = true;
+    viewAdmin.hidden  = false;
+    loadReferenceLists().then(renderReferenceTables);
+  }
+
   btnBack.addEventListener('click', showListView);
+  btnBackFromAdmin.addEventListener('click', showListView);
+  btnManageTypes.addEventListener('click', showAdminView);
 
   // ─── Product row click ────────────────────────────────────────────────────────
   tbody.addEventListener('click', function (e) {
@@ -378,6 +656,15 @@
     return dateStr ? dateStr.slice(0, 4) : null;
   }
 
+  /** Display a YYYY-MM-DD string as DD-MM-YYYY; storage/sorting stay ISO. */
+  function formatDateFR(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const [y, m, d] = parts;
+    return d + '-' + m + '-' + y;
+  }
+
   /** Today's year as integer (local time). */
   function thisYear() {
     return new Date().getFullYear();
@@ -401,6 +688,7 @@
   function epiStatusLabel(status) {
     if (status === 'done')    return '✓ Contrôlé en ' + thisYear();
     if (status === 'missing') return '⚠ Contrôle requis';
+    if (status === 'lost')    return '⚠ Produit perdu';
     return '— Aucun contrôle';
   }
 
@@ -424,6 +712,8 @@
       productType:      raw.productType    || '',
       serialNumber:     raw.serialNumber   || '',
       clubNumber:       raw.clubNumber     || '',
+      color:            raw.color          || '',
+      lost:             Boolean(raw.lost),
       description:      raw.description    || '',
       buyingDate:       raw.buyingDate     || '',
       lifetime:         formatLifetime(raw.lifetime),
@@ -431,7 +721,7 @@
       expiryDate:       expiryStr,
       expiryStatus:     expiryStatus,
       epiChecks:        checks,
-      epiStatus:        computeEpiStatus(checks),
+      epiStatus:        Boolean(raw.lost) ? 'lost' : computeEpiStatus(checks),
     };
   }
 
@@ -443,6 +733,7 @@
         p.productName.toLowerCase().includes(searchTerm) ||
         p.serialNumber.toLowerCase().includes(searchTerm) ||
         p.clubNumber.toLowerCase().includes(searchTerm) ||
+        p.color.toLowerCase().includes(searchTerm) ||
         p.manufacturer.toLowerCase().includes(searchTerm) ||
         p.productType.toLowerCase().includes(searchTerm) ||
         p.description.toLowerCase().includes(searchTerm) ||
@@ -502,7 +793,7 @@
 
     sorted.forEach(function (p) {
       const tr = document.createElement('tr');
-      tr.className    = 'row-clickable';
+      tr.className    = 'row-clickable' + (p.epiStatus === 'missing' ? ' row-epi-required' : '') + (p.epiStatus === 'lost' ? ' row-epi-lost' : '');
       tr.dataset.idx  = p._idx;
       tr.title        = 'Cliquer pour voir les contrôles EPI';
 
@@ -510,10 +801,11 @@
       appendTd(tr, p.productName);
       appendTd(tr, p.serialNumber || '—');
       appendTd(tr, p.clubNumber || '—');
+      appendTd(tr, p.color || '—');
       appendTd(tr, p.productType);
       const descTd = appendTd(tr, p.description);
       descTd.className = 'col-description';
-      appendTd(tr, p.buyingDate || '—');
+      appendTd(tr, formatDateFR(p.buyingDate) || '—');
       appendTd(tr, p.lifetime   || '—');
 
       // Expiry date — display year only
@@ -564,9 +856,11 @@
     detailProductIdentifiers.textContent = [
       p.serialNumber ? 'N° série : ' + p.serialNumber : '',
       p.clubNumber ? 'N° club : ' + p.clubNumber : '',
+      p.color ? 'Couleur : ' + p.color : '',
+      p.lost ? 'Produit perdu' : '',
     ].filter(Boolean).join(' · ');
     detailDescription.textContent = p.description || '';
-    detailBuyingDate.textContent  = p.buyingDate  || '—';
+    detailBuyingDate.textContent  = formatDateFR(p.buyingDate) || '—';
     detailLifetime.textContent    = p.lifetime    || '—';
 
     if (p.expiryDate) {
@@ -610,19 +904,28 @@
     sorted.forEach(function (c) {
       const tr = document.createElement('tr');
 
-      appendTd(tr, c.date       || '—');
+      appendTd(tr, formatDateFR(c.date) || '—');
       appendTd(tr, c.inspector  || '—');
 
       // Result badge
       const resultTd = document.createElement('td');
       const badge    = document.createElement('span');
-      badge.className   = 'check-result-badge check-' + (c.result === 'fail' ? 'fail' : 'pass');
-      badge.textContent = c.result === 'fail' ? '✗ Non conforme' : '✓ Conforme';
+      badge.className   = 'check-result-badge check-' + (c.result === 'fail' ? 'fail' : c.result === 'lost' ? 'lost' : 'pass');
+      badge.textContent = c.result === 'fail' ? '✗ Non conforme' : c.result === 'lost' ? '⚠ Perdu' : '✓ Conforme';
       resultTd.appendChild(badge);
       tr.appendChild(resultTd);
 
       const notesTd = appendTd(tr, c.notes || '—');
       notesTd.className = 'col-notes';
+
+      const actionsTd = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn-secondary btn-row-action';
+      editBtn.textContent = 'Modifier';
+      editBtn.addEventListener('click', function () { openEditCheckModal(c); });
+      actionsTd.appendChild(editBtn);
+      tr.appendChild(actionsTd);
 
       fragment.appendChild(tr);
     });
@@ -630,12 +933,37 @@
     checksBody.appendChild(fragment);
   }
 
-  // ─── New product modal ────────────────────────────────────────────────────────
+  // ─── New / edit product modal ─────────────────────────────────────────────────
   btnNewProduct.addEventListener('click', function () {
+    editingProductIdx = null;
     formNewProduct.reset();
     clearNewProductErrors();
+    populateReferenceSelects();
+    modalNewProductTitle.textContent = 'Nouveau produit';
+    btnSubmitNewProduct.textContent  = 'Ajouter le produit';
     // Default buying date to today
     newProductBuyingDate.value = formatDate(new Date(Date.now()));
+    modalNewProduct.showModal();
+  });
+
+  btnEditProduct.addEventListener('click', function () {
+    if (selectedIdx === null) return;
+    editingProductIdx = selectedIdx;
+    const raw = rawData[selectedIdx];
+    clearNewProductErrors();
+    populateReferenceSelects();
+    modalNewProductTitle.textContent = 'Modifier le produit';
+    btnSubmitNewProduct.textContent  = 'Enregistrer les modifications';
+    newProductName.value         = raw.productName || '';
+    newProductManufacturer.value = raw.manufacturer || '';
+    newProductType.value         = raw.productType || '';
+    newProductSerialNumber.value = raw.serialNumber || '';
+    newProductClubNumber.value   = raw.clubNumber || '';
+    newProductColor.value        = raw.color || '';
+    newProductLost.checked       = Boolean(raw.lost);
+    newProductDescription.value  = raw.description || '';
+    newProductBuyingDate.value   = raw.buyingDate || '';
+    newProductLifetime.value     = Number.isInteger(raw.lifetime) ? raw.lifetime : '';
     modalNewProduct.showModal();
   });
 
@@ -650,6 +978,7 @@
 
   function closeNewProductModal() {
     clearNewProductErrors();
+    editingProductIdx = null;
     modalNewProduct.close();
   }
 
@@ -657,23 +986,34 @@
     e.preventDefault();
     if (!validateNewProductForm()) return;
 
-    const newRaw = {
+    const values = {
       productName:  newProductName.value.trim(),
       manufacturer: newProductManufacturer.value.trim(),
       productType:  newProductType.value.trim(),
       serialNumber: newProductSerialNumber.value.trim(),
       clubNumber:   newProductClubNumber.value.trim(),
+      color:        newProductColor.value.trim(),
+      lost:         newProductLost.checked,
       description:  newProductDescription.value.trim(),
       buyingDate:   newProductBuyingDate.value,
       lifetime:     parseInt(newProductLifetime.value, 10),
-      epiChecks:    [],
     };
 
-    rawData.push(newRaw);
-    allProducts.push(enrichProduct(newRaw, rawData.length - 1));
+    if (editingProductIdx !== null) {
+      const idx = editingProductIdx;
+      Object.assign(rawData[idx], values);
+      allProducts[idx] = enrichProduct(rawData[idx], idx);
+      closeNewProductModal();
+      renderTable();
+      if (selectedIdx === idx) renderDetailView(idx);
+    } else {
+      const newRaw = Object.assign({ epiChecks: [] }, values);
+      rawData.push(newRaw);
+      allProducts.push(enrichProduct(newRaw, rawData.length - 1));
+      closeNewProductModal();
+      renderTable();
+    }
 
-    closeNewProductModal();
-    renderTable();
     saveData();
   });
 
@@ -737,9 +1077,12 @@
     });
   }
 
-  // ─── Add EPI check modal ──────────────────────────────────────────────────────
+  // ─── Add / edit EPI check modal ───────────────────────────────────────────────
   btnAddCheck.addEventListener('click', function () {
-    // Set default date to today
+    editingCheck = null;
+    modalCheckTitle.textContent = 'Nouveau contrôle de sécurité EPI';
+    btnSubmitCheck.textContent  = 'Enregistrer';
+    // Default date to today
     const today = formatDate(new Date(Date.now()));
     checkDate.value      = today;
     checkInspector.value = '';
@@ -748,6 +1091,18 @@
     clearFormErrors();
     modal.showModal();
   });
+
+  function openEditCheckModal(check) {
+    editingCheck = check;
+    modalCheckTitle.textContent = 'Modifier le contrôle EPI';
+    btnSubmitCheck.textContent  = 'Enregistrer les modifications';
+    checkDate.value      = check.date || '';
+    checkInspector.value = check.inspector || '';
+    checkResult.value    = check.result || 'pass';
+    checkNotes.value     = check.notes || '';
+    clearFormErrors();
+    modal.showModal();
+  }
 
   btnCloseModal.addEventListener('click',  closeModal);
   btnCancelCheck.addEventListener('click', closeModal);
@@ -762,6 +1117,7 @@
 
   function closeModal() {
     clearFormErrors();
+    editingCheck = null;
     modal.close();
   }
 
@@ -770,22 +1126,32 @@
     e.preventDefault();
     if (!validateCheckForm()) return;
 
-    const newCheck = {
+    const values = {
       date:      checkDate.value,
       inspector: checkInspector.value.trim(),
       result:    checkResult.value,
       notes:     checkNotes.value.trim(),
     };
 
-    // Update rawData (what gets written to file)
-    if (!Array.isArray(rawData[selectedIdx].epiChecks)) {
-      rawData[selectedIdx].epiChecks = [];
+    if (editingCheck !== null) {
+      Object.assign(editingCheck, values);
+    } else {
+      if (!Array.isArray(rawData[selectedIdx].epiChecks)) {
+        rawData[selectedIdx].epiChecks = [];
+      }
+      rawData[selectedIdx].epiChecks.push(values);
     }
-    rawData[selectedIdx].epiChecks.push(newCheck);
+
+    if (values.result === 'lost') {
+      rawData[selectedIdx].lost = true;
+      allProducts[selectedIdx].lost = true;
+    }
 
     // Update enriched allProducts
     allProducts[selectedIdx].epiChecks = rawData[selectedIdx].epiChecks;
-    allProducts[selectedIdx].epiStatus = computeEpiStatus(allProducts[selectedIdx].epiChecks);
+    allProducts[selectedIdx].epiStatus = allProducts[selectedIdx].lost
+      ? 'lost'
+      : computeEpiStatus(allProducts[selectedIdx].epiChecks);
 
     closeModal();
     renderDetailView(selectedIdx);
