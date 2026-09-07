@@ -56,6 +56,8 @@
   const newProductType         = document.getElementById('newProductType');
   const newProductSerialNumber = document.getElementById('newProductSerialNumber');
   const newProductClubNumber   = document.getElementById('newProductClubNumber');
+  const newProductColor        = document.getElementById('newProductColor');
+  const newProductLost         = document.getElementById('newProductLost');
   const newProductDescription  = document.getElementById('newProductDescription');
   const newProductBuyingDate   = document.getElementById('newProductBuyingDate');
   const newProductLifetime     = document.getElementById('newProductLifetime');
@@ -378,6 +380,15 @@
     return dateStr ? dateStr.slice(0, 4) : null;
   }
 
+  /** Display a YYYY-MM-DD string as DD-MM-YYYY; storage/sorting stay ISO. */
+  function formatDateFR(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const [y, m, d] = parts;
+    return d + '-' + m + '-' + y;
+  }
+
   /** Today's year as integer (local time). */
   function thisYear() {
     return new Date().getFullYear();
@@ -401,6 +412,7 @@
   function epiStatusLabel(status) {
     if (status === 'done')    return '✓ Contrôlé en ' + thisYear();
     if (status === 'missing') return '⚠ Contrôle requis';
+    if (status === 'lost')    return '⚠ Produit perdu';
     return '— Aucun contrôle';
   }
 
@@ -424,6 +436,8 @@
       productType:      raw.productType    || '',
       serialNumber:     raw.serialNumber   || '',
       clubNumber:       raw.clubNumber     || '',
+      color:            raw.color          || '',
+      lost:             Boolean(raw.lost),
       description:      raw.description    || '',
       buyingDate:       raw.buyingDate     || '',
       lifetime:         formatLifetime(raw.lifetime),
@@ -431,7 +445,7 @@
       expiryDate:       expiryStr,
       expiryStatus:     expiryStatus,
       epiChecks:        checks,
-      epiStatus:        computeEpiStatus(checks),
+      epiStatus:        Boolean(raw.lost) ? 'lost' : computeEpiStatus(checks),
     };
   }
 
@@ -443,6 +457,7 @@
         p.productName.toLowerCase().includes(searchTerm) ||
         p.serialNumber.toLowerCase().includes(searchTerm) ||
         p.clubNumber.toLowerCase().includes(searchTerm) ||
+        p.color.toLowerCase().includes(searchTerm) ||
         p.manufacturer.toLowerCase().includes(searchTerm) ||
         p.productType.toLowerCase().includes(searchTerm) ||
         p.description.toLowerCase().includes(searchTerm) ||
@@ -502,7 +517,7 @@
 
     sorted.forEach(function (p) {
       const tr = document.createElement('tr');
-      tr.className    = 'row-clickable' + (p.epiStatus === 'missing' ? ' row-epi-required' : '');
+      tr.className    = 'row-clickable' + (p.epiStatus === 'missing' ? ' row-epi-required' : '') + (p.epiStatus === 'lost' ? ' row-epi-lost' : '');
       tr.dataset.idx  = p._idx;
       tr.title        = 'Cliquer pour voir les contrôles EPI';
 
@@ -510,10 +525,11 @@
       appendTd(tr, p.productName);
       appendTd(tr, p.serialNumber || '—');
       appendTd(tr, p.clubNumber || '—');
+      appendTd(tr, p.color || '—');
       appendTd(tr, p.productType);
       const descTd = appendTd(tr, p.description);
       descTd.className = 'col-description';
-      appendTd(tr, p.buyingDate || '—');
+      appendTd(tr, formatDateFR(p.buyingDate) || '—');
       appendTd(tr, p.lifetime   || '—');
 
       // Expiry date — display year only
@@ -564,9 +580,11 @@
     detailProductIdentifiers.textContent = [
       p.serialNumber ? 'N° série : ' + p.serialNumber : '',
       p.clubNumber ? 'N° club : ' + p.clubNumber : '',
+      p.color ? 'Couleur : ' + p.color : '',
+      p.lost ? 'Produit perdu' : '',
     ].filter(Boolean).join(' · ');
     detailDescription.textContent = p.description || '';
-    detailBuyingDate.textContent  = p.buyingDate  || '—';
+    detailBuyingDate.textContent  = formatDateFR(p.buyingDate) || '—';
     detailLifetime.textContent    = p.lifetime    || '—';
 
     if (p.expiryDate) {
@@ -610,14 +628,14 @@
     sorted.forEach(function (c) {
       const tr = document.createElement('tr');
 
-      appendTd(tr, c.date       || '—');
+      appendTd(tr, formatDateFR(c.date) || '—');
       appendTd(tr, c.inspector  || '—');
 
       // Result badge
       const resultTd = document.createElement('td');
       const badge    = document.createElement('span');
-      badge.className   = 'check-result-badge check-' + (c.result === 'fail' ? 'fail' : 'pass');
-      badge.textContent = c.result === 'fail' ? '✗ Non conforme' : '✓ Conforme';
+      badge.className   = 'check-result-badge check-' + (c.result === 'fail' ? 'fail' : c.result === 'lost' ? 'lost' : 'pass');
+      badge.textContent = c.result === 'fail' ? '✗ Non conforme' : c.result === 'lost' ? '⚠ Perdu' : '✓ Conforme';
       resultTd.appendChild(badge);
       tr.appendChild(resultTd);
 
@@ -663,6 +681,8 @@
       productType:  newProductType.value.trim(),
       serialNumber: newProductSerialNumber.value.trim(),
       clubNumber:   newProductClubNumber.value.trim(),
+      color:        newProductColor.value.trim(),
+      lost:         newProductLost.checked,
       description:  newProductDescription.value.trim(),
       buyingDate:   newProductBuyingDate.value,
       lifetime:     parseInt(newProductLifetime.value, 10),
@@ -782,10 +802,16 @@
       rawData[selectedIdx].epiChecks = [];
     }
     rawData[selectedIdx].epiChecks.push(newCheck);
+    if (newCheck.result === 'lost') {
+      rawData[selectedIdx].lost = true;
+      allProducts[selectedIdx].lost = true;
+    }
 
     // Update enriched allProducts
     allProducts[selectedIdx].epiChecks = rawData[selectedIdx].epiChecks;
-    allProducts[selectedIdx].epiStatus = computeEpiStatus(allProducts[selectedIdx].epiChecks);
+    allProducts[selectedIdx].epiStatus = allProducts[selectedIdx].lost
+      ? 'lost'
+      : computeEpiStatus(allProducts[selectedIdx].epiChecks);
 
     closeModal();
     renderDetailView(selectedIdx);

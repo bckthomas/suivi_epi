@@ -94,6 +94,9 @@
             <th data-col="clubNumber" class="sortable" scope="col">
               Numéro club <span class="sort-icon" aria-hidden="true"></span>
             </th>
+            <th data-col="color" class="sortable" scope="col">
+              Couleur <span class="sort-icon" aria-hidden="true"></span>
+            </th>
             <th data-col="productType" class="sortable" scope="col">
               Type de produit <span class="sort-icon" aria-hidden="true"></span>
             </th>
@@ -271,6 +274,7 @@
           <select id="checkResult" name="checkResult" class="form-input form-select">
             <option value="pass">✓ Conforme — matériel approuvé pour utilisation</option>
             <option value="fail">✗ Non conforme — matériel à retirer du service</option>
+            <option value="lost">⚠ Perdu — matériel introuvable</option>
           </select>
         </div>
 
@@ -350,6 +354,16 @@
             <p class="field-error" id="newProductLifetimeError" hidden>Veuillez saisir une durée de vie valide (en années).</p>
           </div>
         </div>
+
+        <div class="form-row">
+          <label for="newProductColor" class="form-label">Couleur <span class="optional">(facultatif)</span></label>
+          <input type="text" id="newProductColor" name="newProductColor" class="form-input" placeholder="ex. Noir, bleu…" />
+        </div>
+
+        <label class="form-checkbox" for="newProductLost">
+          <input type="checkbox" id="newProductLost" name="newProductLost" />
+          Produit perdu
+        </label>
 
         <div class="modal-footer">
           <button type="button" id="btnCancelNewProduct" class="btn-secondary">Annuler</button>

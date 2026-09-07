@@ -323,6 +323,8 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 .product-table tbody tr:hover { background: var(--color-row-hover); }
 .product-table tbody tr.row-epi-required { background: #fff1f2; }
 .product-table tbody tr.row-epi-required:hover { background: #ffe4e6; }
+.product-table tbody tr.row-epi-lost { background: #fee2e2; }
+.product-table tbody tr.row-epi-lost:hover { background: #fecaca; }
 
 .product-table td {
   padding: .7rem 1rem;
@@ -380,6 +382,7 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 
 .epi-status-done    { background: var(--color-ok);   color: var(--color-ok-t); }
 .epi-status-missing { background: var(--color-fail);  color: var(--color-fail-t); }
+.epi-status-lost    { background: var(--color-fail);  color: var(--color-fail-t); }
 .epi-status-none    { background: #f1f5f9; color: var(--color-text-muted); }
 
 /* ── Check result badge ── */
@@ -395,6 +398,7 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 
 .check-pass { background: var(--color-pass); color: var(--color-pass-t); }
 .check-fail { background: var(--color-fail); color: var(--color-fail-t); }
+.check-lost { background: var(--color-fail); color: var(--color-fail-t); }
 
 /* ============================================================
    Placeholder & empty state
@@ -701,6 +705,20 @@ code.language-json {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.form-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .875rem;
+  color: var(--color-text);
+}
+
+.form-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
 }
 
 @media (max-width: 480px) {

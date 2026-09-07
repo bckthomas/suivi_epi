@@ -20,6 +20,8 @@ db.exec(`
     product_type TEXT NOT NULL,
     serial_number TEXT NOT NULL DEFAULT '',
     club_number TEXT NOT NULL DEFAULT '',
+    color TEXT NOT NULL DEFAULT '',
+    lost INTEGER NOT NULL DEFAULT 0,
     description TEXT NOT NULL DEFAULT '',
     buying_date TEXT NOT NULL,
     lifetime INTEGER NOT NULL DEFAULT 0
@@ -30,10 +32,40 @@ db.exec(`
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     date TEXT NOT NULL,
     inspector TEXT NOT NULL,
-    result TEXT NOT NULL CHECK (result IN ('pass', 'fail')),
+    result TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'lost')),
     notes TEXT NOT NULL DEFAULT ''
   );
 `);
+
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare('PRAGMA table_info(' + table + ')').all();
+  if (!columns.some(function (item) { return item.name === column; })) {
+    db.exec('ALTER TABLE ' + table + ' ADD COLUMN ' + column + ' ' + definition);
+  }
+}
+
+ensureColumn('products', 'color', "TEXT NOT NULL DEFAULT ''");
+ensureColumn('products', 'lost', 'INTEGER NOT NULL DEFAULT 0');
+
+const checksSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'epi_checks'").get();
+if (checksSchema && !checksSchema.sql.includes("'lost'")) {
+  db.transaction(function () {
+    db.exec('ALTER TABLE epi_checks RENAME TO epi_checks_legacy');
+    db.exec(`
+      CREATE TABLE epi_checks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        date TEXT NOT NULL,
+        inspector TEXT NOT NULL,
+        result TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'lost')),
+        notes TEXT NOT NULL DEFAULT ''
+      );
+      INSERT INTO epi_checks (id, product_id, date, inspector, result, notes)
+      SELECT id, product_id, date, inspector, result, notes FROM epi_checks_legacy;
+      DROP TABLE epi_checks_legacy;
+    `);
+  })();
+}
 
 function importSampleDataIfEmpty() {
   const count = db.prepare('SELECT COUNT(*) AS count FROM products').get().count;
@@ -81,8 +113,8 @@ function importSampleDataIfEmpty() {
 function readProducts() {
   const products = db.prepare(`
     SELECT id, product_name AS productName, manufacturer, product_type AS productType,
-           serial_number AS serialNumber, club_number AS clubNumber, description,
-           buying_date AS buyingDate, lifetime
+           serial_number AS serialNumber, club_number AS clubNumber,
+           color, lost, description, buying_date AS buyingDate, lifetime
     FROM products ORDER BY id
   `).all();
   const checks = db.prepare(`
@@ -118,8 +150,8 @@ app.put('/api/products', function (req, res) {
     db.prepare('DELETE FROM products').run();
     const insertProduct = db.prepare(`
       INSERT INTO products
-        (product_name, manufacturer, product_type, serial_number, club_number, description, buying_date, lifetime)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (product_name, manufacturer, product_type, serial_number, club_number, color, lost, description, buying_date, lifetime)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertCheck = db.prepare(`
       INSERT INTO epi_checks (product_id, date, inspector, result, notes)
@@ -128,11 +160,11 @@ app.put('/api/products', function (req, res) {
     products.forEach(function (product) {
       const result = insertProduct.run(
         product.productName || '', product.manufacturer || '', product.productType || '',
-        product.serialNumber || '', product.clubNumber || '', product.description || '',
-        product.buyingDate || '', Number.isInteger(product.lifetime) ? product.lifetime : 0
+        product.serialNumber || '', product.clubNumber || '', product.color || '', product.lost ? 1 : 0,
+        product.description || '', product.buyingDate || '', Number.isInteger(product.lifetime) ? product.lifetime : 0
       );
       (Array.isArray(product.epiChecks) ? product.epiChecks : []).forEach(function (check) {
-        insertCheck.run(result.lastInsertRowid, check.date || '', check.inspector || '', check.result === 'fail' ? 'fail' : 'pass', check.notes || '');
+        insertCheck.run(result.lastInsertRowid, check.date || '', check.inspector || '', check.result === 'fail' ? 'fail' : check.result === 'lost' ? 'lost' : 'pass', check.notes || '');
       });
     });
   });
