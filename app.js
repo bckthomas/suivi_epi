@@ -12,6 +12,7 @@
 
   // ─── Feature detect ──────────────────────────────────────────────────────────
   const FSAPI = typeof window.showOpenFilePicker === 'function';
+  const API_MODE = window.location.protocol === 'http:' || window.location.protocol === 'https:';
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let allProducts        = [];   // enriched rows (includes computed fields + _idx)
@@ -104,6 +105,15 @@
     fallbackBanner.hidden = false;
   }
 
+  if (API_MODE) {
+    btnLoadFSAPI.hidden = true;
+    labelFileInput.hidden = true;
+    fileInput.hidden = true;
+    fallbackBanner.hidden = true;
+    fileNameEl.textContent = 'Base de données';
+    loadProductsFromAPI();
+  }
+
   // ─── File loading — FSAPI path ────────────────────────────────────────────────
   btnLoadFSAPI.addEventListener('click', async function () {
     try {
@@ -171,11 +181,40 @@
     }
   }
 
+  async function loadProductsFromAPI() {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const products = await response.json();
+      loadJSON(JSON.stringify(products));
+    } catch (err) {
+      showError('Impossible de charger les produits depuis la base de données : ' + err.message);
+      hideTable();
+    }
+  }
+
   // ─── Saving ───────────────────────────────────────────────────────────────────
   /**
    * Serialize rawData to JSON and either write via FSAPI or trigger a download.
    */
   async function saveData() {
+    if (API_MODE) {
+      setSaveStatus('saving');
+      try {
+        const response = await fetch('/api/products', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(rawData),
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        setSaveStatus('saved');
+      } catch (err) {
+        setSaveStatus('unsaved');
+        showError('Échec de la sauvegarde en base de données : ' + err.message);
+      }
+      return;
+    }
+
     const json = JSON.stringify(rawData, null, 2);
 
     if (FSAPI && fileHandle) {

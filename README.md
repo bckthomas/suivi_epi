@@ -1,41 +1,62 @@
 # Suivi EPI — Matériel d'escalade
 
-Application web statique pour le suivi des contrôles annuels de sécurité (EPI) du matériel d'escalade. Aucune dépendance externe, aucun serveur requis — ouvrez simplement `index.html` dans un navigateur.
+Application web pour le suivi des contrôles annuels de sécurité (EPI) du matériel d'escalade. Les données sont stockées dans une base SQLite via une API Node.js et peuvent être lancées avec Docker.
 
 ---
 
 ## Fonctionnalités
 
-- **Chargement d'un fichier JSON** depuis le système de fichiers local
+- **Chargement automatique** des produits depuis la base de données
 - **Tableau de l'inventaire** avec toutes les informations produit
 - **Colonne Statut EPI** indiquant si le contrôle annuel a été effectué
 - **Fiche détail** par produit : historique complet des contrôles EPI
 - **Ajout de contrôles EPI** via une modale (date, contrôleur, résultat, remarques)
 - **Ajout de nouveaux produits** directement depuis l'interface
-- **Sauvegarde automatique** dans le fichier JSON source
+- **Sauvegarde automatique** dans la base de données
 - **Tri** sur toutes les colonnes, **recherche** en temps réel
 - Entièrement en **français**
 
 ---
 
-## Démarrage rapide
+## Démarrage avec Docker
 
 1. Cloner ou télécharger ce dépôt
-2. Ouvrir `index.html` dans un navigateur moderne
-3. Cliquer sur **Charger un fichier JSON** et sélectionner votre fichier (ou utiliser `sample-products.json` pour tester)
+2. Lancer `docker compose up --build`
+3. Ouvrir `http://localhost:3000`
 
-Aucune installation, aucun build, aucun serveur nécessaire.
+La base SQLite est conservée dans le volume Docker `suivi_epi_data`. Au premier démarrage, `sample-products.json` est importé automatiquement si la base est vide.
+
+Pour arrêter l'application :
+
+```bash
+docker compose down
+```
+
+Pour supprimer également les données persistées :
+
+```bash
+docker compose down -v
+```
+
+## Démarrage local sans Docker
+
+```bash
+npm install
+npm start
+```
+
+Puis ouvrir `http://localhost:3000`. Le fichier `index.html` reste également utilisable directement en mode local JSON, sans serveur.
 
 ---
 
 ## Compatibilité navigateurs et sauvegarde
 
-| Navigateur | Sauvegarde |
+| Mode | Sauvegarde |
 |---|---|
-| Chrome, Edge | ✅ Sauvegarde directe dans le fichier source (File System Access API) |
-| Firefox, Safari | ⬇️ Téléchargement du fichier mis à jour après chaque modification |
+| API/Docker (`http://localhost:3000`) | ✅ Sauvegarde dans SQLite |
+| Fichier local (`index.html`) | ⬇️ Sauvegarde JSON via le navigateur |
 
-> **Brave** désactive la File System Access API pour des raisons de confidentialité, même si son moteur est basé sur Chromium. Un bandeau d'information s'affiche automatiquement dans ce cas.
+La base de données doit être sauvegardée séparément du conteneur. Le volume Docker protège les données lors d'un redémarrage, mais ne remplace pas une sauvegarde.
 
 ---
 
@@ -97,7 +118,11 @@ Le fichier JSON doit contenir un tableau d'objets. Exemple :
 epi_follow/
 ├── index.html           # Application (vue liste + vue détail + modales)
 ├── style.css            # Styles
-├── app.js               # Logique applicative (Vanilla JS, sans dépendance)
+├── app.js               # Frontend et appels API
+├── server.js            # API Express et initialisation SQLite
+├── package.json         # Dépendances backend
+├── Dockerfile           # Image de production
+├── docker-compose.yml   # Service et volume de données
 ├── sample-products.json # Données d'exemple
 └── README.md
 ```
