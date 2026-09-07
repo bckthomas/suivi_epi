@@ -53,6 +53,8 @@
   const newProductName         = document.getElementById('newProductName');
   const newProductManufacturer = document.getElementById('newProductManufacturer');
   const newProductType         = document.getElementById('newProductType');
+  const newProductSerialNumber = document.getElementById('newProductSerialNumber');
+  const newProductClubNumber   = document.getElementById('newProductClubNumber');
   const newProductDescription  = document.getElementById('newProductDescription');
   const newProductBuyingDate   = document.getElementById('newProductBuyingDate');
   const newProductLifetime     = document.getElementById('newProductLifetime');
@@ -68,6 +70,7 @@
   const detailProductName = document.getElementById('detailProductName');
   const detailProductMeta = document.getElementById('detailProductMeta');
   const detailManufacturer = document.getElementById('detailManufacturer');
+  const detailProductIdentifiers = document.getElementById('detailProductIdentifiers');
   const detailEpiStatus  = document.getElementById('detailEpiStatus');
   const detailDescription = document.getElementById('detailDescription');
   const detailBuyingDate = document.getElementById('detailBuyingDate');
@@ -380,6 +383,8 @@
       productName:      raw.productName    || '',
       manufacturer:     raw.manufacturer   || '',
       productType:      raw.productType    || '',
+      serialNumber:     raw.serialNumber   || '',
+      clubNumber:       raw.clubNumber     || '',
       description:      raw.description    || '',
       buyingDate:       raw.buyingDate     || '',
       lifetime:         formatLifetime(raw.lifetime),
@@ -397,6 +402,8 @@
     return products.filter(function (p) {
       return (
         p.productName.toLowerCase().includes(searchTerm) ||
+        p.serialNumber.toLowerCase().includes(searchTerm) ||
+        p.clubNumber.toLowerCase().includes(searchTerm) ||
         p.manufacturer.toLowerCase().includes(searchTerm) ||
         p.productType.toLowerCase().includes(searchTerm) ||
         p.description.toLowerCase().includes(searchTerm) ||
@@ -462,6 +469,8 @@
 
       appendTd(tr, p.manufacturer);
       appendTd(tr, p.productName);
+      appendTd(tr, p.serialNumber || '—');
+      appendTd(tr, p.clubNumber || '—');
       appendTd(tr, p.productType);
       const descTd = appendTd(tr, p.description);
       descTd.className = 'col-description';
@@ -513,6 +522,10 @@
     detailProductName.textContent = p.productName || '(sans nom)';
     detailProductMeta.textContent = p.productType || '';
     detailManufacturer.textContent = p.manufacturer || '';
+    detailProductIdentifiers.textContent = [
+      p.serialNumber ? 'N° série : ' + p.serialNumber : '',
+      p.clubNumber ? 'N° club : ' + p.clubNumber : '',
+    ].filter(Boolean).join(' · ');
     detailDescription.textContent = p.description || '';
     detailBuyingDate.textContent  = p.buyingDate  || '—';
     detailLifetime.textContent    = p.lifetime    || '—';
@@ -609,6 +622,8 @@
       productName:  newProductName.value.trim(),
       manufacturer: newProductManufacturer.value.trim(),
       productType:  newProductType.value.trim(),
+      serialNumber: newProductSerialNumber.value.trim(),
+      clubNumber:   newProductClubNumber.value.trim(),
       description:  newProductDescription.value.trim(),
       buyingDate:   newProductBuyingDate.value,
       lifetime:     parseInt(newProductLifetime.value, 10),

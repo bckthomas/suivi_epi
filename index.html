@@ -88,6 +88,12 @@
             <th data-col="productName" class="sortable" scope="col">
               Nom du produit <span class="sort-icon" aria-hidden="true"></span>
             </th>
+            <th data-col="serialNumber" class="sortable" scope="col">
+              Numéro de série <span class="sort-icon" aria-hidden="true"></span>
+            </th>
+            <th data-col="clubNumber" class="sortable" scope="col">
+              Numéro club <span class="sort-icon" aria-hidden="true"></span>
+            </th>
             <th data-col="productType" class="sortable" scope="col">
               Type de produit <span class="sort-icon" aria-hidden="true"></span>
             </th>
@@ -169,6 +175,7 @@
             <h2 id="detailProductName" class="detail-product-name"></h2>
             <p id="detailProductMeta" class="detail-product-meta"></p>
             <p id="detailManufacturer" class="detail-manufacturer"></p>
+            <p id="detailProductIdentifiers" class="detail-product-identifiers"></p>
           </div>
           <span id="detailEpiStatus" class="epi-year-badge"></span>
         </div>
@@ -311,6 +318,18 @@
           <label for="newProductType" class="form-label">Type de produit <span class="required" aria-hidden="true">*</span></label>
           <input type="text" id="newProductType" name="newProductType" class="form-input" placeholder="ex. Baudrier, Corde, Mousqueton…" required />
           <p class="field-error" id="newProductTypeError" hidden>Le type de produit est obligatoire.</p>
+        </div>
+
+        <div class="form-row-group">
+          <div class="form-row">
+            <label for="newProductSerialNumber" class="form-label">Numéro de série <span class="optional">(facultatif)</span></label>
+            <input type="text" id="newProductSerialNumber" name="newProductSerialNumber" class="form-input" placeholder="ex. SN-123456" />
+          </div>
+
+          <div class="form-row">
+            <label for="newProductClubNumber" class="form-label">Numéro club <span class="optional">(facultatif)</span></label>
+            <input type="text" id="newProductClubNumber" name="newProductClubNumber" class="form-input" placeholder="ex. C-042" />
+          </div>
         </div>
 
         <div class="form-row">

@@ -49,6 +49,8 @@ Le fichier JSON doit contenir un tableau d'objets. Exemple :
     "productName": "Grigri+",
     "manufacturer": "Petzl",
     "productType": "Assureur",
+    "serialNumber": "SN-123456",
+    "clubNumber": "C-042",
     "description": "Assureur à blocage assisté avec poignée anti-panique.",
     "buyingDate": "2022-09-14",
     "lifetime": 10,
@@ -71,6 +73,8 @@ Le fichier JSON doit contenir un tableau d'objets. Exemple :
 | `productName` | `string` | ✅ | Nom du produit |
 | `manufacturer` | `string` | ✅ | Fabricant |
 | `productType` | `string` | ✅ | Type de produit (Baudrier, Corde…) |
+| `serialNumber` | `string` | — | Numéro de série du produit |
+| `clubNumber` | `string` | — | Numéro attribué par le club |
 | `description` | `string` | — | Description libre |
 | `buyingDate` | `string` | ✅ | Date d'achat au format `YYYY-MM-DD` |
 | `lifetime` | `integer` | ✅ | Durée de vie en **années** — `0` = illimité |

@@ -515,6 +515,12 @@ code.language-json {
   margin-top: .1rem;
 }
 
+.detail-product-identifiers {
+  color: var(--color-text-muted);
+  font-size: .82rem;
+  margin-top: .3rem;
+}
+
 .detail-product-desc {
   color: var(--color-text-muted);
   font-size: .9rem;
