@@ -2,7 +2,7 @@ services:
   suivi-epi:
     build: .
     ports:
-      - "3000:3000"
+      - "3005:3000"
     volumes:
       - /mnt/user/appdata/suivi-epi/data:/app/data
     restart: unless-stopped
