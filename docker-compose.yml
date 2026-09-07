@@ -4,8 +4,5 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - suivi_epi_data:/app/data
+      - /mnt/user/appdata/suivi-epi/data:/app/data
     restart: unless-stopped
-
-volumes:
-  suivi_epi_data:
