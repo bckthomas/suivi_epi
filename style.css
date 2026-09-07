@@ -321,6 +321,8 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
 .product-table tbody tr:last-child { border-bottom: none; }
 .product-table tbody tr:nth-child(even) { background: var(--color-row-even); }
 .product-table tbody tr:hover { background: var(--color-row-hover); }
+.product-table tbody tr.row-epi-required { background: #fff1f2; }
+.product-table tbody tr.row-epi-required:hover { background: #ffe4e6; }
 
 .product-table td {
   padding: .7rem 1rem;

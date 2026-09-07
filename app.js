@@ -502,7 +502,7 @@
 
     sorted.forEach(function (p) {
       const tr = document.createElement('tr');
-      tr.className    = 'row-clickable';
+      tr.className    = 'row-clickable' + (p.epiStatus === 'missing' ? ' row-epi-required' : '');
       tr.dataset.idx  = p._idx;
       tr.title        = 'Cliquer pour voir les contrôles EPI';
 
