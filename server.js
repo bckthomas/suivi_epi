@@ -35,6 +35,21 @@ db.exec(`
     result TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'lost')),
     notes TEXT NOT NULL DEFAULT ''
   );
+
+  CREATE TABLE IF NOT EXISTS product_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  );
+
+  CREATE TABLE IF NOT EXISTS manufacturers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  );
+
+  CREATE TABLE IF NOT EXISTS colors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  );
 `);
 
 function ensureColumn(table, column, definition) {
@@ -110,6 +125,105 @@ function importSampleDataIfEmpty() {
   importProducts(products);
 }
 
+// Reference lists (product types, manufacturers, colors) share the same shape:
+// a lookup table of unique names, seeded from existing product values, renamed
+// or deleted with the same rules (rename cascades, delete can replace usages).
+const referenceLists = [
+  { table: 'product_types', column: 'product_type', route: 'product-types', label: 'type de produit' },
+  { table: 'manufacturers', column: 'manufacturer', route: 'manufacturers', label: 'fabricant' },
+  { table: 'colors', column: 'color', route: 'colors', label: 'couleur' },
+];
+
+function seedReferenceListIfEmpty(cfg) {
+  const count = db.prepare('SELECT COUNT(*) AS count FROM ' + cfg.table).get().count;
+  if (count !== 0) return;
+  const distinct = db.prepare('SELECT DISTINCT ' + cfg.column + " AS name FROM products WHERE " + cfg.column + " != ''").all();
+  const insert = db.prepare('INSERT OR IGNORE INTO ' + cfg.table + ' (name) VALUES (?)');
+  db.transaction(function () {
+    distinct.forEach(function (row) { insert.run(row.name); });
+  })();
+}
+
+function readReferenceList(cfg) {
+  return db.prepare(`
+    SELECT t.id, t.name, COUNT(p.id) AS count
+    FROM ${cfg.table} t
+    LEFT JOIN products p ON p.${cfg.column} = t.name
+    GROUP BY t.id, t.name
+    ORDER BY t.name COLLATE NOCASE
+  `).all();
+}
+
+function registerReferenceListRoutes(cfg) {
+  app.get('/api/' + cfg.route, function (req, res) {
+    res.json(readReferenceList(cfg));
+  });
+
+  app.post('/api/' + cfg.route, function (req, res) {
+    const name = String(req.body && req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Le nom du ' + cfg.label + ' est obligatoire.' });
+    try {
+      db.prepare('INSERT INTO ' + cfg.table + ' (name) VALUES (?)').run(name);
+    } catch (err) {
+      if (String(err.message).includes('UNIQUE')) return res.status(409).json({ error: 'Ce ' + cfg.label + ' existe déjà.' });
+      throw err;
+    }
+    res.status(201).json(readReferenceList(cfg));
+  });
+
+  app.put('/api/' + cfg.route + '/:id', function (req, res) {
+    const id = Number(req.params.id);
+    const name = String(req.body && req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Le nom du ' + cfg.label + ' est obligatoire.' });
+    const existing = db.prepare('SELECT * FROM ' + cfg.table + ' WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: cfg.label.charAt(0).toUpperCase() + cfg.label.slice(1) + ' introuvable.' });
+    const rename = db.transaction(function () {
+      db.prepare('UPDATE ' + cfg.table + ' SET name = ? WHERE id = ?').run(name, id);
+      db.prepare('UPDATE products SET ' + cfg.column + ' = ? WHERE ' + cfg.column + ' = ?').run(name, existing.name);
+    });
+    try {
+      rename();
+    } catch (err) {
+      if (String(err.message).includes('UNIQUE')) return res.status(409).json({ error: 'Ce ' + cfg.label + ' existe déjà.' });
+      throw err;
+    }
+    res.json(readReferenceList(cfg));
+  });
+
+  app.delete('/api/' + cfg.route + '/:id', function (req, res) {
+    const id = Number(req.params.id);
+    const existing = db.prepare('SELECT * FROM ' + cfg.table + ' WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: cfg.label.charAt(0).toUpperCase() + cfg.label.slice(1) + ' introuvable.' });
+    const inUse = db.prepare('SELECT COUNT(*) AS count FROM products WHERE ' + cfg.column + ' = ?').get(existing.name).count;
+    const hasReplacement = Object.prototype.hasOwnProperty.call(req.body || {}, 'replacementId');
+    const replacementId = hasReplacement && req.body.replacementId !== null ? Number(req.body.replacementId) : null;
+    let replacement = null;
+
+    if (inUse > 0 && !hasReplacement) {
+      return res.status(400).json({ error: 'Un remplacement est obligatoire pour ce ' + cfg.label + '.' });
+    }
+    if (hasReplacement && replacementId !== null) {
+      replacement = db.prepare('SELECT * FROM ' + cfg.table + ' WHERE id = ?').get(replacementId);
+      if (!replacement || replacement.id === existing.id) {
+        return res.status(400).json({ error: 'Le remplacement choisi est invalide.' });
+      }
+    }
+    if (inUse > 0 && !replacement && cfg.route !== 'colors') {
+      return res.status(400).json({ error: 'Un remplacement est obligatoire pour ce ' + cfg.label + '.' });
+    }
+
+    const replaceAndDelete = db.transaction(function () {
+      if (inUse > 0) {
+        db.prepare('UPDATE products SET ' + cfg.column + ' = ? WHERE ' + cfg.column + ' = ?')
+          .run(replacement ? replacement.name : '', existing.name);
+      }
+      db.prepare('DELETE FROM ' + cfg.table + ' WHERE id = ?').run(id);
+    });
+    replaceAndDelete();
+    res.json(readReferenceList(cfg));
+  });
+}
+
 function readProducts() {
   const products = db.prepare(`
     SELECT id, product_name AS productName, manufacturer, product_type AS productType,
@@ -176,9 +290,12 @@ app.get('/api/health', function (req, res) {
   res.json({ status: 'ok' });
 });
 
+referenceLists.forEach(registerReferenceListRoutes);
+
 app.use(express.static(__dirname));
 
 importSampleDataIfEmpty();
+referenceLists.forEach(seedReferenceListIfEmpty);
 app.listen(port, '0.0.0.0', function () {
   console.log('Suivi EPI disponible sur http://localhost:' + port);
 });

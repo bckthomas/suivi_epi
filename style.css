@@ -73,7 +73,6 @@ body {
    App shell
    ============================================================ */
 .app {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
 }
@@ -512,7 +511,7 @@ code.language-json {
   flex-shrink: 0;
 }
 
-.product-card-actions button svg {
+button svg {
   width: 16px;
   height: 16px;
 }
@@ -659,6 +658,40 @@ code.language-json {
 .btn-secondary:hover {
   background: var(--color-row-hover);
   border-color: var(--color-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn-danger:not(:disabled) {
+  color: var(--color-fail-t);
+  border-color: var(--color-fail-t);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--color-fail);
+}
+
+/* ============================================================
+   Admin view (product types)
+   ============================================================ */
+.admin-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.admin-add-form {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+  max-width: 480px;
+}
+
+.admin-add-form .form-input {
+  flex: 1;
 }
 
 .btn-icon {
@@ -820,3 +853,6 @@ code.language-json {
   .modal-footer button { width: 100%; justify-content: center; }
 }
 
+.admin-section {
+  margin-bottom: 2rem;
+}
