@@ -22,7 +22,7 @@ Application web pour le suivi des contrôles annuels de sécurité (EPI) du mat�
 
 1. Cloner ou télécharger ce dépôt
 2. Lancer `docker compose up --build`
-3. Ouvrir `http://localhost:3000`
+3. Ouvrir `http://localhost:3005`
 
 La base SQLite est conservée dans le volume Docker `suivi_epi_data`. Au premier démarrage, `sample-products.json` est importé automatiquement si la base est vide.
 
@@ -53,7 +53,7 @@ Puis ouvrir `http://localhost:3000`. Le fichier `index.html` reste également ut
 
 | Mode | Sauvegarde |
 |---|---|
-| API/Docker (`http://localhost:3000`) | ✅ Sauvegarde dans SQLite |
+| API/Docker (`http://localhost:3005`) | ✅ Sauvegarde dans SQLite |
 | Fichier local (`index.html`) | ⬇️ Sauvegarde JSON via le navigateur |
 
 La base de données doit être sauvegardée séparément du conteneur. Le volume Docker protège les données lors d'un redémarrage, mais ne remplace pas une sauvegarde.
