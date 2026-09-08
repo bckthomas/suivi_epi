@@ -18,6 +18,12 @@
         <p class="subtitle">Suivi des contrôles annuels de sécurité du matériel d'escalade.</p>
       </div>
       <div class="app-header-right">
+        <button id="btnShowChecks" class="btn-secondary" type="button" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v1H3a1 1 0 000 2h1v2H3a1 1 0 000 2h1v2H3a1 1 0 000 2h1v1a2 2 0 002 2h8a2 2 0 002-2v-1h1a1 1 0 100-2h-1v-2h1a1 1 0 100-2h-1V7h1a1 1 0 100-2h-1V4a2 2 0 00-2-2H6zm1 4h6v2H7V6zm0 4h6v2H7v-2zm0 4h4v2H7v-2z" clip-rule="evenodd"/>
+          </svg>
+          Contrôles EPI
+        </button>
         <button id="btnManageTypes" class="btn-secondary">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
@@ -185,6 +191,66 @@
         </div>
       </div>
     </div><!-- /#view-list -->
+
+    <!-- VIEW: EPI CHECKS BY DATE -->
+    <div id="view-checks" hidden>
+      <div class="detail-topbar">
+        <button id="btnBackFromChecks" class="btn-back" type="button" aria-label="Retour à la liste des produits">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 2H5.414l4.293 4.293a1 1 0 01-1.414 1.414z" clip-rule="evenodd"/>
+          </svg>
+          Retour à la liste
+        </button>
+      </div>
+      <h2 class="checks-page-title">Contrôles EPI par date</h2>
+      <p class="checks-page-subtitle">Sélectionnez une date pour voir les équipements contrôlés.</p>
+      <div class="table-wrapper">
+        <table class="product-table checks-by-date-table" aria-live="polite">
+          <thead>
+            <tr><th scope="col">Date du contrôle</th><th scope="col">Équipements contrôlés</th></tr>
+          </thead>
+          <tbody id="checksByDateBody"></tbody>
+        </table>
+        <div id="checksByDateEmpty" class="empty-state" hidden>
+          <p>Aucun contrôle EPI enregistré.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: EQUIPMENT CHECKED ON ONE DATE -->
+    <div id="view-check-date" hidden>
+      <div class="detail-topbar">
+        <button id="btnBackFromCheckDate" class="btn-back" type="button" aria-label="Retour aux dates des contrôles">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 01-1.414 1.414L9.707 16.707z" clip-rule="evenodd"/>
+          </svg>
+          Retour aux dates
+        </button>
+      </div>
+      <h2 id="checkDateTitle" class="checks-page-title"></h2>
+      <div class="table-wrapper">
+        <table class="product-table" aria-live="polite">
+          <thead>
+            <tr>
+              <th scope="col">Fabricant</th>
+              <th scope="col">Nom du produit</th>
+              <th scope="col">Numéro de série</th>
+              <th scope="col">Numéro club</th>
+              <th scope="col">Couleur</th>
+              <th scope="col">Type de produit</th>
+              <th scope="col">Description</th>
+              <th scope="col">Date d'achat</th>
+              <th scope="col">Durée de vie</th>
+              <th scope="col">Date d'expiration</th>
+              <th scope="col">Contrôleur</th>
+              <th scope="col">Résultat du contrôle</th>
+              <th scope="col">Remarques</th>
+            </tr>
+          </thead>
+          <tbody id="checkDateBody"></tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- ═══════════════════════════════════════════════════
          VIEW: DETAIL (EPI checks for one product)

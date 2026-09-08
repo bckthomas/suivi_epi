@@ -37,6 +37,15 @@
 
   // List view
   const viewList         = document.getElementById('view-list');
+  const viewChecks       = document.getElementById('view-checks');
+  const viewCheckDate    = document.getElementById('view-check-date');
+  const btnShowChecks    = document.getElementById('btnShowChecks');
+  const btnBackFromChecks = document.getElementById('btnBackFromChecks');
+  const btnBackFromCheckDate = document.getElementById('btnBackFromCheckDate');
+  const checksByDateBody = document.getElementById('checksByDateBody');
+  const checksByDateEmpty = document.getElementById('checksByDateEmpty');
+  const checkDateTitle   = document.getElementById('checkDateTitle');
+  const checkDateBody    = document.getElementById('checkDateBody');
   const btnLoadFSAPI     = document.getElementById('btnLoadFSAPI');
   const labelFileInput   = document.getElementById('labelFileInput');
   const fileInput        = document.getElementById('fileInput');
@@ -202,6 +211,7 @@
       sortCol = null;
       sortDir = 'asc';
       btnNewProduct.disabled = false;
+      btnShowChecks.disabled = false;
       updateLostActions();
       resetSortHeaders();
       if (!preserveAdminView) showListView();
@@ -555,6 +565,8 @@
   function showListView() {
     viewList.hidden   = false;
     viewDetail.hidden = true;
+    viewChecks.hidden = true;
+    viewCheckDate.hidden = true;
     viewAdmin.hidden  = true;
     selectedIdx       = null;
   }
@@ -563,6 +575,8 @@
     selectedIdx       = idx;
     viewList.hidden   = true;
     viewDetail.hidden = false;
+    viewChecks.hidden = true;
+    viewCheckDate.hidden = true;
     viewAdmin.hidden  = true;
     renderDetailView(idx);
   }
@@ -570,13 +584,115 @@
   function showAdminView() {
     viewList.hidden   = true;
     viewDetail.hidden = true;
+    viewChecks.hidden = true;
+    viewCheckDate.hidden = true;
     viewAdmin.hidden  = false;
     loadReferenceLists().then(renderReferenceTables);
   }
 
+  function showChecksView() {
+    viewList.hidden = true;
+    viewDetail.hidden = true;
+    viewChecks.hidden = false;
+    viewCheckDate.hidden = true;
+    viewAdmin.hidden = true;
+    renderChecksByDate();
+  }
+
+  function showCheckDateView(date) {
+    viewList.hidden = true;
+    viewDetail.hidden = true;
+    viewChecks.hidden = true;
+    viewCheckDate.hidden = false;
+    viewAdmin.hidden = true;
+    renderChecksForDate(date);
+  }
+
   btnBack.addEventListener('click', showListView);
   btnBackFromAdmin.addEventListener('click', showListView);
+  btnShowChecks.addEventListener('click', showChecksView);
+  btnBackFromChecks.addEventListener('click', showListView);
+  btnBackFromCheckDate.addEventListener('click', showChecksView);
   btnManageTypes.addEventListener('click', showAdminView);
+
+  function collectChecksByDate() {
+    const checksByDate = new Map();
+    allProducts.forEach(function (product) {
+      (product.epiChecks || []).forEach(function (check) {
+        if (!check.date) return;
+        if (!checksByDate.has(check.date)) checksByDate.set(check.date, []);
+        checksByDate.get(check.date).push({ product, check });
+      });
+    });
+    return checksByDate;
+  }
+
+  function renderChecksByDate() {
+    const checksByDate = collectChecksByDate();
+    const dates = Array.from(checksByDate.keys()).sort().reverse();
+    checksByDateBody.textContent = '';
+    checksByDateEmpty.hidden = dates.length !== 0;
+    if (!dates.length) return;
+
+    const fragment = document.createDocumentFragment();
+    dates.forEach(function (date) {
+      const row = document.createElement('tr');
+      row.className = 'row-clickable';
+      row.dataset.date = date;
+      appendTd(row, formatDateFR(date));
+      appendTd(row, String(checksByDate.get(date).length));
+      fragment.appendChild(row);
+    });
+    checksByDateBody.appendChild(fragment);
+  }
+
+  checksByDateBody.addEventListener('click', function (event) {
+    const row = event.target.closest('tr[data-date]');
+    if (row) showCheckDateView(row.dataset.date);
+  });
+
+  function renderChecksForDate(date) {
+    const checksByDate = collectChecksByDate();
+    const entries = checksByDate.get(date) || [];
+    checkDateTitle.textContent = 'Équipements contrôlés le ' + formatDateFR(date);
+    checkDateBody.textContent = '';
+
+    const fragment = document.createDocumentFragment();
+    entries.forEach(function (entry) {
+      const row = document.createElement('tr');
+      appendTd(row, entry.product.manufacturer || '—');
+      appendTd(row, entry.product.productName || '(sans nom)');
+      appendTd(row, entry.product.serialNumber || '—');
+      appendTd(row, entry.product.clubNumber || '—');
+      appendTd(row, entry.product.color || '—');
+      appendTd(row, entry.product.productType || '—');
+      const description = appendTd(row, entry.product.description || '—');
+      description.className = 'col-description';
+      appendTd(row, formatDateFR(entry.product.buyingDate) || '—');
+      appendTd(row, entry.product.lifetime || '—');
+
+      const expiryCell = document.createElement('td');
+      if (entry.product.expiryDate) {
+        const expiryBadge = document.createElement('span');
+        expiryBadge.className = 'expiry-badge expiry-' + entry.product.expiryStatus;
+        expiryBadge.textContent = yearOf(entry.product.expiryDate);
+        expiryCell.appendChild(expiryBadge);
+      } else {
+        expiryCell.textContent = 'N/A';
+      }
+      row.appendChild(expiryCell);
+
+      appendTd(row, entry.check.inspector || '—');
+      const result = entry.check.result === 'fail'
+        ? 'Non conforme'
+        : entry.check.result === 'lost' ? 'Perdu' : 'Conforme';
+      appendTd(row, result);
+      const notes = appendTd(row, entry.check.notes || '—');
+      notes.className = 'col-notes';
+      fragment.appendChild(row);
+    });
+    checkDateBody.appendChild(fragment);
+  }
 
   // ─── Product row click ────────────────────────────────────────────────────────
   tbody.addEventListener('click', function (e) {

@@ -316,6 +316,20 @@ th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
   cursor: pointer;
 }
 
+.checks-page-title {
+  font-size: 1.35rem;
+  margin-bottom: .25rem;
+}
+
+.checks-page-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.checks-by-date-table tbody tr {
+  cursor: pointer;
+}
+
 /* Description column */
 .product-table td.col-description {
   max-width: 240px;
@@ -649,7 +663,7 @@ button svg {
   @page landscape { size: landscape; }
   body.print-landscape { page: landscape; }
   body { background: #fff; }
-  .app-header-right, .controls, .info-banner, #errorBox, #placeholder, #emptyState { display: none !important; }
+  .app-header-right, .controls, .info-banner, #errorBox, #placeholder, #emptyState, .detail-topbar { display: none !important; }
   .app { padding: 0; }
   .table-wrapper { border: 0; box-shadow: none; overflow: visible; }
   .product-table { font-size: 10pt; }
