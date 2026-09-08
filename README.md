@@ -46,6 +46,16 @@ Pour arrêter l'application :
 docker compose down
 ```
 
+### Développement frontend sans rebuild
+
+Pour modifier `index.html`, `style.css` ou `app.js` sans reconstruire l'image à chaque fois :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+```
+
+Le `--build` est nécessaire uniquement au premier démarrage, ou après une modification du backend (`server.js`, `package.json` ou `Dockerfile`). Pour les modifications frontend suivantes, rechargez simplement la page. Le mode normal `docker compose up --build -d` reste recommandé pour le déploiement.
+
 Pour supprimer également les données persistées, supprimez manuellement le dossier configuré par `DATA_PATH` après avoir arrêté les conteneurs.
 
 

@@ -1,0 +1,6 @@
+services:
+  suivi-epi:
+    volumes:
+      - ./index.html:/app/index.html:ro
+      - ./style.css:/app/style.css:ro
+      - ./app.js:/app/app.js:ro
