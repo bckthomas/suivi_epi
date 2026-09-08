@@ -4,5 +4,5 @@ services:
     ports:
       - "3005:3000"
     volumes:
-      - /mnt/user/appdata/suivi-epi/data:/app/data
+      - ${DATA_PATH:-./data}:/app/data
     restart: unless-stopped

@@ -21,10 +21,24 @@ Application web pour le suivi des contrôles annuels de sécurité (EPI) du mat�
 ## Démarrage avec Docker
 
 1. Cloner ou télécharger ce dépôt
-2. Lancer `docker compose up --build`
-3. Ouvrir `http://localhost:3005`
+2. Copier `.env.example` vers `.env` et adapter `DATA_PATH` au dossier qui contient (ou doit contenir) la base SQLite
+3. Lancer `docker compose up --build`
+4. Ouvrir `http://localhost:3005`
 
-La base SQLite est conservée dans le volume Docker `suivi_epi_data`. Au premier démarrage, `sample-products.json` est importé automatiquement si la base est vide.
+La base SQLite est conservée dans le dossier indiqué par `DATA_PATH`, monté dans le conteneur sous `/app/data`. Au premier démarrage, `sample-products.json` est importé automatiquement si la base est vide.
+
+Exemple de configuration `.env` :
+
+```dotenv
+DATA_PATH=/mnt/user/appdata/dockge/stacks/suivi_epi/data
+```
+
+Après une modification de `DATA_PATH`, recréer le conteneur avec :
+
+```bash
+docker compose down
+docker compose up --build -d
+```
 
 Pour arrêter l'application :
 
@@ -32,11 +46,8 @@ Pour arrêter l'application :
 docker compose down
 ```
 
-Pour supprimer également les données persistées :
+Pour supprimer également les données persistées, supprimez manuellement le dossier configuré par `DATA_PATH` après avoir arrêté les conteneurs.
 
-```bash
-docker compose down -v
-```
 
 ## Démarrage local sans Docker
 
