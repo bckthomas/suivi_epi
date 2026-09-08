@@ -24,7 +24,14 @@
           </svg>
           Gestion des listes
         </button>
-        <span id="saveStatus" class="save-status" hidden></span>
+
+        <button id="btnPrint" class="btn-secondary" type="button" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v2h2V4h10v2h2V4a2 2 0 00-2-2H5zM3 8a2 2 0 00-2 2v4a2 2 0 002 2h2v2h10v-2h2a2 2 0 002-2v-4a2 2 0 00-2-2H3zm4 6h6v2H7v-2z" clip-rule="evenodd"/>
+          </svg>
+          Imprimer
+        </button>
+
       </div>
     </header>
 
@@ -70,6 +77,21 @@
           </svg>
           Nouveau produit
         </button>
+
+        <div class="lost-actions" aria-label="Liste des équipements perdus">
+          <button id="btnShowLost" class="btn-secondary" type="button" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 4a1 1 0 10-2 0v4a1 1 0 00.293.707l2 2a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd"/>
+            </svg>
+            Équipements perdus
+          </button>
+          <button id="btnExportLostCSV" class="btn-secondary" type="button" disabled hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h8a1 1 0 011 1v3h2V4a1 1 0 011-1h1v14H4a1 1 0 01-1-1V3zm3 3h5V4H6v2zm0 4h8V8H6v2zm0 4h8v-2H6v2z" clip-rule="evenodd"/>
+            </svg>
+            Exporter les perdus en CSV
+          </button>
+        </div>
       </section>
 
       <!-- Fallback banner for browsers without FSAPI -->

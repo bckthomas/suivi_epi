@@ -22,6 +22,7 @@
   let sortCol            = null;
   let sortDir            = 'asc';
   let searchTerm         = '';
+  let lostOnly           = false;
   let selectedIdx        = null; // index into allProducts for the detail view
   let editingProductIdx  = null; // index being edited, or null when creating
   let editingCheck       = null; // check object reference being edited, or null when creating
@@ -33,7 +34,6 @@
 
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   // Header
-  const saveStatusEl     = document.getElementById('saveStatus');
 
   // List view
   const viewList         = document.getElementById('view-list');
@@ -50,6 +50,9 @@
   const statsEl          = document.getElementById('stats');
   const statsText        = document.getElementById('statsText');
   const fallbackBanner   = document.getElementById('fallbackBanner');
+  const btnShowLost      = document.getElementById('btnShowLost');
+  const btnPrint     = document.getElementById('btnPrint');
+  const btnExportLostCSV = document.getElementById('btnExportLostCSV');
   const headers          = table.querySelectorAll('th[data-col]');
 
   // New product modal
@@ -199,10 +202,10 @@
       sortCol = null;
       sortDir = 'asc';
       btnNewProduct.disabled = false;
+      updateLostActions();
       resetSortHeaders();
       if (!preserveAdminView) showListView();
       renderTable();
-      setSaveStatus('saved');
       loadReferenceLists();
     } catch (err) {
       showError('Impossible d\'analyser le fichier : ' + err.message);
@@ -466,7 +469,6 @@
    */
   async function saveData() {
     if (API_MODE) {
-      setSaveStatus('saving');
       try {
         const response = await fetch('/api/products', {
           method: 'PUT',
@@ -474,9 +476,7 @@
           body: JSON.stringify(rawData),
         });
         if (!response.ok) throw new Error('HTTP ' + response.status);
-        setSaveStatus('saved');
       } catch (err) {
-        setSaveStatus('unsaved');
         showError('Échec de la sauvegarde en base de données : ' + err.message);
       }
       return;
@@ -485,20 +485,16 @@
     const json = JSON.stringify(rawData, null, 2);
 
     if (FSAPI && fileHandle) {
-      setSaveStatus('saving');
       try {
         const writable = await fileHandle.createWritable();
         await writable.write(json);
         await writable.close();
-        setSaveStatus('saved');
       } catch (err) {
-        setSaveStatus('unsaved');
         showError('Échec de la sauvegarde : ' + err.message);
       }
     } else {
       // Fallback: download
       triggerDownload(json, currentFileName || 'epi-gear.json');
-      setSaveStatus('saved');
     }
   }
 
@@ -514,18 +510,30 @@
     URL.revokeObjectURL(url);
   }
 
-  function setSaveStatus(state) {
-    saveStatusEl.hidden = false;
-    saveStatusEl.className = 'save-status ' + state;
-    if (state === 'saved')   { saveStatusEl.textContent = '✓ Enregistré'; }
-    if (state === 'saving')  { saveStatusEl.textContent = '⏳ Enregistrement…'; }
-    if (state === 'unsaved') { saveStatusEl.textContent = '⚠ Modifications non enregistrées'; }
-  }
-
   // ─── Search ───────────────────────────────────────────────────────────────────
   searchInput.addEventListener('input', function () {
     searchTerm = this.value.trim().toLowerCase();
     renderTable();
+  });
+
+  btnShowLost.addEventListener('click', function () {
+    lostOnly = !lostOnly;
+    btnShowLost.textContent = lostOnly ? 'Tous les équipements' : 'Équipements perdus';
+    renderTable();
+  });
+
+  btnPrint.addEventListener('click', function () {
+    document.body.classList.add('print-landscape');
+    window.print();
+  });
+
+  window.addEventListener('afterprint', function () {
+    document.body.classList.remove('print-landscape');
+  });
+
+  btnExportLostCSV.addEventListener('click', function () {
+    const lostProducts = rawData.filter(function (product) { return Boolean(product.lost); });
+    triggerCSVDownload(productsToCSV(lostProducts), 'equipements-perdus.csv');
   });
 
   // ─── Column sorting ───────────────────────────────────────────────────────────
@@ -727,8 +735,9 @@
 
   // ─── Filter & sort ────────────────────────────────────────────────────────────
   function filterProducts(products) {
-    if (!searchTerm) return products;
     return products.filter(function (p) {
+      if (lostOnly && !p.lost) return false;
+      if (!searchTerm) return true;
       return (
         p.productName.toLowerCase().includes(searchTerm) ||
         p.serialNumber.toLowerCase().includes(searchTerm) ||
@@ -767,13 +776,16 @@
 
   // ─── Render list table ────────────────────────────────────────────────────────
   function renderTable() {
+    updateLostActions();
     const filtered = filterProducts(allProducts);
     const sorted   = sortProducts(filtered);
 
     statsEl.hidden = false;
     const total = allProducts.length;
     const shown = sorted.length;
-    statsText.textContent = searchTerm
+    statsText.textContent = lostOnly
+      ? shown + ' équipement' + (shown !== 1 ? 's' : '') + ' perdu' + (shown !== 1 ? 's' : '')
+      : searchTerm
       ? shown + ' sur ' + total + ' produit' + (total !== 1 ? 's' : '') + ' affiché' + (shown !== 1 ? 's' : '')
       : total + ' produit' + (total !== 1 ? 's' : '');
 
@@ -835,6 +847,47 @@
     });
 
     tbody.appendChild(fragment);
+  }
+
+  function updateLostActions() {
+    const hasProducts = allProducts.length > 0;
+    const hasLostProducts = allProducts.some(function (product) { return product.lost; });
+    btnShowLost.disabled = !hasProducts;
+    btnPrint.disabled = !hasProducts;
+    btnExportLostCSV.hidden = !lostOnly;
+    btnExportLostCSV.disabled = !hasLostProducts;
+  }
+
+  const CSV_COLUMNS = [
+    'productName', 'manufacturer', 'productType', 'serialNumber', 'clubNumber',
+    'color', 'description', 'buyingDate', 'lifetime', 'lost'
+  ];
+
+  function csvEscape(value) {
+    const text = value === null || value === undefined ? '' : String(value);
+    return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+  }
+
+  function productsToCSV(products) {
+    const rows = [CSV_COLUMNS.join(',')];
+    products.forEach(function (product) {
+      rows.push(CSV_COLUMNS.map(function (column) {
+        return csvEscape(column === 'lost' ? (product.lost ? 'oui' : 'non') : product[column]);
+      }).join(','));
+    });
+    return '\ufeff' + rows.join('\r\n') + '\r\n';
+  }
+
+  function triggerCSVDownload(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   function appendTd(tr, text) {

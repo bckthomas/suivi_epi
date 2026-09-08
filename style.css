@@ -105,34 +105,7 @@ body {
   display: flex;
   align-items: center;
   padding-top: .25rem;
-}
-
-/* ── Save status chip ── */
-.save-status {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .3rem .75rem;
-  border-radius: 999px;
-  font-size: .8rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.save-status.saved {
-  background: var(--color-ok);
-  color: var(--color-ok-t);
-}
-
-.save-status.unsaved {
-  background: var(--color-warn-bg);
-  color: var(--color-warn-t);
-  border: 1px solid var(--color-warn-b);
-}
-
-.save-status.saving {
-  background: var(--color-info-bg);
-  color: var(--color-info-t);
+  gap: .5rem;
 }
 
 /* ============================================================
@@ -191,6 +164,13 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 240px;
+}
+
+.lost-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
 }
 
 /* Search */
@@ -663,6 +643,18 @@ button svg {
 .btn-secondary:disabled {
   opacity: .5;
   cursor: not-allowed;
+}
+
+@media print {
+  @page landscape { size: landscape; }
+  body.print-landscape { page: landscape; }
+  body { background: #fff; }
+  .app-header-right, .controls, .info-banner, #errorBox, #placeholder, #emptyState { display: none !important; }
+  .app { padding: 0; }
+  .table-wrapper { border: 0; box-shadow: none; overflow: visible; }
+  .product-table { font-size: 10pt; }
+  .product-table th, .product-table td { padding: .35rem .5rem; }
+  .stats { margin-bottom: .5rem; color: #000; }
 }
 
 .btn-danger:not(:disabled) {
